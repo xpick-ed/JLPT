@@ -599,7 +599,8 @@ button {
   box-shadow: 0 0 0 3px var(--kin-glow);
 }
 
-.fall-tile.shake { animation: shakeTile .4s ease; border-color: var(--shu); }
+.fall-tile.shake { border-color: var(--shu); box-shadow: 0 0 0 2px var(--shu-glow); }
+.fall-tile.shake .ft-text { animation: shakeTile .3s both; }
 
 .fall-tile.gone {
   pointer-events: none;

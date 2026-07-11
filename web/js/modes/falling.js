@@ -94,6 +94,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver) {
   }
 
   function failPair(pair) {
+    if (selected && selected.pairId === pair.id) { selected = null; }
     removePair(pair, 'fall-miss');
     lives -= 1;
     combo = 0;
