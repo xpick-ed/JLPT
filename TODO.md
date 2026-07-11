@@ -3,7 +3,7 @@
 ## Current  (overwrite this section at every handoff)
 
 - Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md；四本單字書完成（N5 793 / N4 994 / N3 1954 / N2 1770，皆含五十音索引，例句經生成+審稿雙輪）。N2 為新增（part1-12），N5/N4 已補充（part6/6-7）
-- Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。文法句型書 N5-N2 已完成（557 句型，557→477 去重 CSV）；下一步聽力每日菜單、讀解技巧、考古題
+- Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。單字/文法/聽力菜單皆備；下一步靠自己每天執行（聽力見 LISTENING_PLAN.md），讀解技巧＋考古題於 Phase 3-4
 - 文法素材: build_grammar_pdf.py（level 參數，紫色系）、data/grammar_<lv>_part*.json、<LV>文法句型書.pdf、JLPT_N5-N2_文法句型合併_Anki.csv
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
 - Relevant files: STUDY_PLAN.md, N5/N4/N3單字書.pdf, build_vocab_pdf.py, data/n[345]_part*.json
