@@ -11,6 +11,14 @@ const MODES = [
 let currentMode = 'match';
 let settingsOpen = false;
 
+// Theme toggle cycles system → dark → light → system.
+const THEME_ORDER = ['system', 'dark', 'light'];
+const THEME_META = {
+  system: { icon: '◐', title: '主題：跟隨系統（點擊切換）' },
+  dark:   { icon: '☾', title: '主題：深色（點擊切換）' },
+  light:  { icon: '☀', title: '主題：淺色（點擊切換）' },
+};
+
 function fxLayer() {
   return document.getElementById('fx-layer') || document.body;
 }
@@ -111,7 +119,10 @@ export function renderChrome(root, state, dataByLevel, handlers) {
           <nav class="tabs" role="tablist" aria-label="遊戲模式">
             ${MODES.map(m => `<button type="button" class="tab${m.id === currentMode ? ' active' : ''}" data-mode="${m.id}" role="tab" aria-selected="${m.id === currentMode}">${m.label}</button>`).join('')}
           </nav>
-          <button type="button" class="gear-btn" aria-label="設定" aria-expanded="${settingsOpen}">⚙</button>
+          <div class="chrome-actions">
+            <button type="button" class="theme-btn" aria-label="切換主題" title="${THEME_META[s.theme]?.title || THEME_META.system.title}">${THEME_META[s.theme]?.icon || THEME_META.system.icon}</button>
+            <button type="button" class="gear-btn" aria-label="設定" aria-expanded="${settingsOpen}">⚙</button>
+          </div>
         </div>
         <div class="chrome-row chrome-filters">
           <div class="chip-row levels" role="group" aria-label="級別">
@@ -166,6 +177,11 @@ export function renderChrome(root, state, dataByLevel, handlers) {
     root.querySelector('.gear-btn').addEventListener('click', () => {
       settingsOpen = !settingsOpen;
       render();
+    });
+
+    root.querySelector('.theme-btn').addEventListener('click', () => {
+      const next = THEME_ORDER[(THEME_ORDER.indexOf(s.theme) + 1) % THEME_ORDER.length];
+      handlers.onSettingsChange({ theme: next });
     });
 
     root.querySelectorAll('.level-chip').forEach(btn => btn.addEventListener('click', () => {

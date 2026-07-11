@@ -17,6 +17,14 @@ let queue = [];            // ids to review this session
 let stopFalling = null;
 let audio = makeAudio(state.settings.sound);
 
+// 'system' follows prefers-color-scheme (no attribute); 'dark'/'light' force it.
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'dark' || theme === 'light') root.dataset.theme = theme;
+  else delete root.dataset.theme;
+}
+applyTheme(state.settings.theme);
+
 async function loadLevels(levels) {
   for (const lv of levels) if (!dataByLevel[lv])
     dataByLevel[lv] = await (await fetch(`data/${lv}.json`)).json();
@@ -124,7 +132,7 @@ function renderAll() {
     onModeChange: m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; next(); },
     onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
-    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); rebuildPool(); persist(); renderAll(); next(); },
+    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
   });
 }
 
