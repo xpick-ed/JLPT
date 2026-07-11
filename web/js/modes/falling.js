@@ -156,6 +156,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver) {
   }
 
   function end() {
+    if (!running) return;
     running = false;
     cancelAnimationFrame(raf);
     onGameOver({ score, maxCombo });

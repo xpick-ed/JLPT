@@ -60,10 +60,10 @@ function next() {
   }
 }
 function makeFallingSupply() {
-  let bag = [];
+  let bag = queue.slice();           // snapshot due+new; do NOT drain the shared queue
   return () => {
-    while (queue.length) { const c = byId(queue.shift()); if (c) return c; }
-    if (!bag.length) bag = buildPracticeQueue();
+    while (bag.length) { const c = byId(bag.shift()); if (c) return c; }
+    bag = buildPracticeQueue();      // then refill from the whole pool, shuffled, forever
     while (bag.length) { const c = byId(bag.shift()); if (c) return c; }
     return null;
   };
