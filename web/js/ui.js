@@ -154,7 +154,7 @@ export function renderChrome(root, state, dataByLevel, handlers) {
             <input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}>
           </label>
           <label class="field">
-            <span>配對內容（配對／落下）</span>
+            <span>配對內容（配對／落下／四選一）</span>
             <select id="set-pairmode">
               <option value="meaning">中文意思</option>
               <option value="reading">假名讀音（只出漢字詞）</option>

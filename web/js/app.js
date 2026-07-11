@@ -66,7 +66,7 @@ function next() {
     const id = queue.shift();
     if (!id) return renderDone(stage);
     const card = byId(id);
-    mode === 'typing' ? mountTyping(stage, card, onResult, audio) : mountQuiz(stage, card, pool, onResult, audio);
+    mode === 'typing' ? mountTyping(stage, card, onResult, audio) : mountQuiz(stage, card, pool, onResult, audio, state.settings.pairMode);
   }
 }
 function makeFallingSupply() {
