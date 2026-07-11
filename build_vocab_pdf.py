@@ -7,6 +7,7 @@ Fonts: IPAGothic for Japanese, NotoTC for Traditional Chinese.
 import glob
 import json
 import os
+import re
 import sys
 import urllib.request
 from datetime import date
@@ -29,16 +30,64 @@ ACCENT = colors.HexColor("#2A6F97")
 GRAY = colors.HexColor("#666666")
 LIGHT = colors.HexColor("#EEF3F7")
 
-TC_FONT_PATH = "assets/fonts/NotoSansTC-var.ttf"
-TC_FONT_URL = ("https://github.com/google/fonts/raw/main/ofl/notosanstc/"
-               "NotoSansTC%5Bwght%5D.ttf")
-if not os.path.exists(TC_FONT_PATH):
-    os.makedirs(os.path.dirname(TC_FONT_PATH), exist_ok=True)
-    print("downloading Noto Sans TC font ...")
-    urllib.request.urlretrieve(TC_FONT_URL, TC_FONT_PATH)
+# The Traditional-Chinese role uses Noto Sans CJK TC, a pan-CJK font that also
+# covers Japanese shinjitai (変・続・覚・体) — needed because category labels mix
+# Japanese and Traditional-Chinese orthography. reportlab can't embed the CFF/OTF
+# build, so we convert it once to a quadratic-outline TTF and cache that.
+CJK_TTF = "assets/fonts/NotoSansCJKtc-Regular.ttf"
+CJK_OTF = "assets/fonts/NotoSansCJKtc-Regular.otf"
+CJK_OTF_URL = ("https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/"
+               "TraditionalChinese/NotoSansCJKtc-Regular.otf")
 
+
+def ensure_cjk_ttf():
+    if os.path.exists(CJK_TTF):
+        return
+    os.makedirs(os.path.dirname(CJK_TTF), exist_ok=True)
+    if not os.path.exists(CJK_OTF):
+        print("downloading Noto Sans CJK TC ...")
+        urllib.request.urlretrieve(CJK_OTF_URL, CJK_OTF)
+    print("converting OTF -> TTF (one-time, ~60s) ...")
+    from fontTools.ttLib import TTFont as FTFont, newTable
+    from fontTools.pens.cu2quPen import Cu2QuPen
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    from fontTools.ttLib.tables._g_l_y_f import table__g_l_y_f
+    f = FTFont(CJK_OTF)
+    gs = f.getGlyphSet()
+    order = f.getGlyphOrder()
+    glyphs = {}
+    for name in order:
+        pen = TTGlyphPen(gs)
+        gs[name].draw(Cu2QuPen(pen, 1.0, reverse_direction=True))
+        glyphs[name] = pen.glyph()
+    glyf = table__g_l_y_f()
+    glyf.glyphOrder = order
+    glyf.glyphs = glyphs
+    f["glyf"] = glyf
+    maxp = newTable("maxp")
+    maxp.tableVersion = 0x00010000
+    maxp.numGlyphs = len(order)
+    for a in ("maxPoints", "maxContours", "maxCompositePoints", "maxCompositeContours",
+              "maxTwilightPoints", "maxStorage", "maxFunctionDefs", "maxInstructionDefs",
+              "maxStackElements", "maxSizeOfInstructions", "maxComponentElements",
+              "maxComponentDepth"):
+        setattr(maxp, a, 0)
+    maxp.maxZones = 1
+    f["maxp"] = maxp
+    f["loca"] = newTable("loca")
+    f["head"].glyphDataFormat = 0
+    for tag in ("CFF ", "CFF2", "VORG"):
+        if tag in f:
+            del f[tag]
+    f.sfntVersion = "\x00\x01\x00\x00"
+    if "post" in f:  # format 3.0 stores no glyph names (65535-glyph overflow otherwise)
+        f["post"].formatType = 3.0
+    f.save(CJK_TTF)
+
+
+ensure_cjk_ttf()
 pdfmetrics.registerFont(TTFont(JP, "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"))
-pdfmetrics.registerFont(TTFont(TC, TC_FONT_PATH))
+pdfmetrics.registerFont(TTFont(TC, CJK_TTF))
 # neither font ships a bold face; map <b>/<i> back to the regular weight
 pdfmetrics.registerFontFamily(JP, normal=JP, bold=JP, italic=JP, boldItalic=JP)
 pdfmetrics.registerFontFamily(TC, normal=TC, bold=TC, italic=TC, boldItalic=TC)
@@ -48,11 +97,22 @@ def esc(s):
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+LEVEL = (sys.argv[1] if len(sys.argv) > 1 else "n5").lower()
+
+
+def _part_num(path):
+    m = re.search(r"_part(\d+)\.json$", path)
+    return int(m.group(1)) if m else 0
+
+
 def load_data():
     categories = []
     seen = {}
     dupes = []
-    for path in sorted(glob.glob("data/n5_part*.json")):
+    paths = sorted(glob.glob(f"data/{LEVEL}_part*.json"), key=_part_num)
+    if not paths:
+        raise SystemExit(f"no data files matching data/{LEVEL}_part*.json")
+    for path in paths:
         with open(path, encoding="utf-8") as f:
             doc = json.load(f)
         for cat in doc["categories"]:
@@ -88,7 +148,7 @@ class BookTemplate(BaseDocTemplate):
         canvas.setFillColor(GRAY)
         canvas.drawCentredString(A4[0] / 2, 10 * mm, f"- {doc.page} -")
         canvas.setFont(TC, 8)
-        canvas.drawString(18 * mm, A4[1] - 12 * mm, "JLPT N5 單字書")
+        canvas.drawString(18 * mm, A4[1] - 12 * mm, f"JLPT {LEVEL.upper()} 單字書")
         canvas.setFillColor(ACCENT)
         canvas.line(18 * mm, A4[1] - 14 * mm, A4[0] - 18 * mm, A4[1] - 14 * mm)
         canvas.restoreState()
@@ -174,7 +234,7 @@ def main():
     story = []
     # cover
     story.append(Spacer(1, 70 * mm))
-    story.append(Paragraph("JLPT N5 單字書", S["title"]))
+    story.append(Paragraph(f"JLPT {LEVEL.upper()} 單字書", S["title"]))
     story.append(Spacer(1, 8 * mm))
     story.append(Paragraph(f"共 {total} 詞　·　假名讀音／羅馬拼音／詞性／中譯／例句",
                            S["subtitle"]))
@@ -199,7 +259,7 @@ def main():
             idx += 1
             story.append(entry_flowable(idx, e))
 
-    out = "N5單字書.pdf"
+    out = f"{LEVEL.upper()}單字書.pdf"
     BookTemplate(out).multiBuild(story)
     print(f"OK: {out} — {total} entries, {len(categories)} categories")
 
