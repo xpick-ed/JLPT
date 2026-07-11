@@ -2,7 +2,7 @@
 
 ## Current  (overwrite this section at every handoff)
 
-- Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md；N5/N4/N3 三本單字書 PDF 完成（含五十音索引，例句已審稿）
+- Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md；三本單字書完成（N5 723 / N4 694 / N3 1954，含五十音索引，例句已審稿）。N3 已擴充補充（part11-14）並剔除 22 個罕見 N1 詞
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
 - Relevant files: STUDY_PLAN.md, N5/N4/N3單字書.pdf, build_vocab_pdf.py, data/n[345]_part*.json
