@@ -56,7 +56,26 @@ function next() {
     mode === 'typing' ? mountTyping(stage, card, onResult, audio) : mountQuiz(stage, card, pool, onResult, audio);
   }
 }
-function renderDone(stage) { stage.innerHTML = `<div class="done">今日到期已複習完 🎉</div>`; }
+function buildPracticeQueue() {
+  // Practice / review-ahead: every card in the current pool, shuffled, ignoring
+  // due dates — so you can keep playing after the day's due+new queue is empty.
+  const ids = pool.map(c => c.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
+function renderDone(stage) {
+  stage.innerHTML = `
+    <div class="done">
+      <div class="done-emoji">🎉</div>
+      <p class="done-msg">今日到期已複習完</p>
+      <button type="button" id="practice-btn" class="practice-btn">繼續練習（提前複習）</button>
+    </div>`;
+  const btn = stage.querySelector('#practice-btn');
+  if (btn) btn.onclick = () => { queue = buildPracticeQueue(); next(); };
+}
 
 function renderAll() {
   renderChrome(document.getElementById('chrome'), state, dataByLevel, {
