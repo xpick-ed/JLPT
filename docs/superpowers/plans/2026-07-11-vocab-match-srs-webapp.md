@@ -52,7 +52,7 @@
 - Create: `tests/smoke.test.mjs`
 
 **Interfaces:**
-- Produces: a working `node --test tests/` command for all later tasks.
+- Produces: a working `node --test tests/*.test.mjs` command for all later tasks.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -68,7 +68,7 @@ test('node test runner works', () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `node --test tests/`
+Run: `node --test tests/*.test.mjs`
 Expected: FAIL — `Cannot find package ... "type"` is fine to ignore, but more likely the run works and passes. If Node warns about module type, continue to Step 3. (The real failure this guards against: no `package.json`, so `.js` ESM imports later break.)
 
 - [ ] **Step 3: Create `package.json`**
@@ -83,7 +83,7 @@ Expected: FAIL — `Cannot find package ... "type"` is fine to ignore, but more 
 
 - [ ] **Step 4: Run to verify it passes**
 
-Run: `node --test tests/`
+Run: `node --test tests/*.test.mjs`
 Expected: PASS (`tests 1`, `pass 1`).
 
 - [ ] **Step 5: Commit**
@@ -901,7 +901,7 @@ git commit -m "feat: passphrase sync client + Cloudflare Worker with tests"
 
 - [ ] **Step 1: Run all JS tests**
 
-Run: `node --test tests/`
+Run: `node --test tests/*.test.mjs`
 Expected: PASS — all tests from Tasks 1,3,4,5,6,7,8,9.
 
 - [ ] **Step 2: Run the data build test**
@@ -1204,7 +1204,7 @@ git commit -m "chore: GitHub Pages workflow + Worker deploy docs"
 
 - [ ] **Step 1: Full test suite**
 
-Run: `node --test tests/` and `python3 tests/test_build_data.py`
+Run: `node --test tests/*.test.mjs` and `python3 tests/test_build_data.py`
 Expected: all PASS / `ok`.
 
 - [ ] **Step 2: Cross-device sync smoke (manual)**
