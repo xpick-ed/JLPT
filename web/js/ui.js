@@ -5,6 +5,7 @@ const MODES = [
   { id: 'match', label: '配對' },
   { id: 'typing', label: '打字' },
   { id: 'quiz', label: '四選一' },
+  { id: 'falling', label: '落下' },
 ];
 
 let currentMode = 'match';

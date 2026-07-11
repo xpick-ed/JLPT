@@ -6,6 +6,7 @@ import { renderChrome } from './ui.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
+import { mountFalling } from './modes/falling.js';
 import { WORKER_URL } from '../config.js';
 
 const state = { ...loadState() };
@@ -13,6 +14,7 @@ let mode = 'match';
 let dataByLevel = {};      // { n2: [cards] }
 let pool = [];             // filtered candidate cards
 let queue = [];            // ids to review this session
+let stopFalling = null;
 let audio = makeAudio(state.settings.sound);
 
 async function loadLevels(levels) {
@@ -38,13 +40,14 @@ let advancePending = false;
 function onResult(id, grade) {
   Object.assign(state, applyGrade(state, id, grade, Date.now()));
   persist();
-  if (!advancePending) {
+  if (mode !== 'falling' && !advancePending) {
     advancePending = true;
     queueMicrotask(() => { advancePending = false; next(); });
   }
 }
 function next() {
   const stage = document.getElementById('stage');
+  if (mode === 'falling') return startFalling();
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
     if (six.length < 1) return renderDone(stage);
@@ -55,6 +58,34 @@ function next() {
     const card = byId(id);
     mode === 'typing' ? mountTyping(stage, card, onResult, audio) : mountQuiz(stage, card, pool, onResult, audio);
   }
+}
+function makeFallingSupply() {
+  let bag = [];
+  return () => {
+    while (queue.length) { const c = byId(queue.shift()); if (c) return c; }
+    if (!bag.length) bag = buildPracticeQueue();
+    while (bag.length) { const c = byId(bag.shift()); if (c) return c; }
+    return null;
+  };
+}
+function startFalling() {
+  if (stopFalling) { stopFalling(); stopFalling = null; }
+  const stage = document.getElementById('stage');
+  if (pool.length === 0) return renderDone(stage);
+  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, audio, onGameOver);
+}
+function onGameOver({ score, maxCombo }) {
+  if (stopFalling) { stopFalling(); stopFalling = null; }
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <div class="done">
+      <div class="done-emoji">🎮</div>
+      <p class="done-msg">遊戲結束</p>
+      <p class="done-hint">分數 ${score}　·　最高連擊 ${maxCombo}</p>
+      <button type="button" id="again-btn" class="practice-btn">再玩一次</button>
+    </div>`;
+  const btn = stage.querySelector('#again-btn');
+  if (btn) btn.onclick = () => startFalling();
 }
 function buildPracticeQueue() {
   // Practice / review-ahead: every card in the current pool, shuffled, ignoring
@@ -88,10 +119,10 @@ function renderDone(stage) {
 
 function renderAll() {
   renderChrome(document.getElementById('chrome'), state, dataByLevel, {
-    onModeChange: m => { mode = m; next(); },
-    onLevelsChange: async lv => { state.settings.levels = lv; state.updated = Date.now(); await loadLevels(lv); rebuildPool(); persist(); next(); },
-    onCategoriesChange: c => { state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
-    onSettingsChange: s => { Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); rebuildPool(); persist(); renderAll(); next(); },
+    onModeChange: m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; next(); },
+    onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(lv); rebuildPool(); persist(); next(); },
+    onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
+    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); rebuildPool(); persist(); renderAll(); next(); },
   });
 }
 
