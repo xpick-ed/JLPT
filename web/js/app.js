@@ -34,10 +34,14 @@ async function persist() {
   clearTimeout(pushTimer);
   pushTimer = setTimeout(async () => push(WORKER_URL, await hashKey(state.settings.passphrase), state), 3000);
 }
+let advancePending = false;
 function onResult(id, grade) {
   Object.assign(state, applyGrade(state, id, grade, Date.now()));
   persist();
-  next();
+  if (!advancePending) {
+    advancePending = true;
+    queueMicrotask(() => { advancePending = false; next(); });
+  }
 }
 function next() {
   const stage = document.getElementById('stage');
