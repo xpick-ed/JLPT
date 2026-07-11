@@ -1,0 +1,30 @@
+# NOTE: To enable auto-deploy, place this file at .github/workflows/pages.yml
+# (pushing to .github/workflows/ needs a GitHub token with the "workflow" scope,
+# or add it via the GitHub web UI). Then set Pages source = GitHub Actions.
+
+name: Deploy game to Pages
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: web }
+      - id: deployment
+        uses: actions/deploy-pages@v4

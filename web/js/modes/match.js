@@ -26,7 +26,10 @@ function shuffle(arr) {
 export function mountMatch(root, cards, onResult, audio) {
   const tiles = [];
   for (const c of cards) {
-    tiles.push({ id: c.id, type: 'word', text: c.word, sub: c.kana });
+    // Match mode shows only the word's most-common written form (kanji / kana /
+    // katakana, as stored in `word`) ↔ its Chinese meaning; no reading here
+    // (reading practice lives in typing mode).
+    tiles.push({ id: c.id, type: 'word', text: c.word, sub: '' });
     tiles.push({ id: c.id, type: 'meaning', text: c.zh, sub: '' });
   }
   const order = shuffle(tiles);
