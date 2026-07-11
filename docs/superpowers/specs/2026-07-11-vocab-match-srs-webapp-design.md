@@ -58,7 +58,7 @@
 ### 3. 進度儲存：`web/js/store.js`
 - 本機真相來源 = `localStorage`（key: `vocabmatch.state`），內容：
   `{ cards: { [id]: SRSCard }, settings: { newPerDay, levels, categories, sound }, updated }`。
-- `settings` 預設：`newPerDay=20`、`levels=["n2"]`、`categories=[]`（全部）、`sound=true`。
+- `settings` 預設：`newPerDay=50`、`levels=["n2"]`、`categories=[]`（全部）、`sound=true`。
 - `load()/save(state)`；`mergeStates(a, b)`：逐卡取 `updated` 較新者；`settings` 取整體 `updated` 較新者。
 - 相依：localStorage。無網路。
 
