@@ -1,4 +1,4 @@
-level,category,word,word_furigana,kana,romaji,pos,meaning_zh,example_furigana,example_zh
+﻿level,category,word,word_furigana,kana,romaji,pos,meaning_zh,example_furigana,example_zh
 N5,數字與量詞,一,一[いち],いち,ichi,名,一；1,一[いち]から 十[じゅう]まで 数[かぞ]えます。,從一數到十。
 N5,數字與量詞,二,二[に],に,ni,名,二；2,二[に]と 三[さん]を 足[た]します。,把二和三相加。
 N5,數字與量詞,三,三[さん],さん,san,名,三；3,三[さん]は 好[す]きな 数字[すうじ]です。,三是我喜歡的數字。
