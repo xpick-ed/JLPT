@@ -47,7 +47,7 @@ function next() {
   const stage = document.getElementById('stage');
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
-    if (six.length < 2) return renderDone(stage);
+    if (six.length < 1) return renderDone(stage);
     mountMatch(stage, six, onResult, audio);
   } else {
     const id = queue.shift();
@@ -67,10 +67,19 @@ function renderAll() {
   });
 }
 
+addEventListener('pagehide', () => {
+  clearTimeout(pushTimer);
+  if (WORKER_URL && state.settings.passphrase) {
+    hashKey(state.settings.passphrase).then(k =>
+      fetch(`${WORKER_URL}?key=${k}`, { method:'PUT', headers:{'content-type':'application/json'}, body: JSON.stringify(state), keepalive: true }).catch(()=>{}));
+  }
+});
+
 (async function boot() {
   if (WORKER_URL && state.settings.passphrase) {
     const remote = await pull(WORKER_URL, await hashKey(state.settings.passphrase));
     if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
+    push(WORKER_URL, await hashKey(state.settings.passphrase), state);
   }
   await loadLevels(state.settings.levels);
   rebuildPool();

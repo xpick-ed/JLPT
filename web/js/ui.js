@@ -135,7 +135,7 @@ export function renderChrome(root, state, dataByLevel, handlers) {
           </label>
           <label class="field">
             <span>同步密語（passphrase）</span>
-            <input type="text" id="set-passphrase" placeholder="留空＝不同步" value="${s.passphrase || ''}" autocomplete="off">
+            <input type="text" id="set-passphrase" placeholder="留空＝不同步" autocomplete="off">
           </label>
           <label class="field field-row">
             <span>音效</span>
@@ -181,6 +181,7 @@ export function renderChrome(root, state, dataByLevel, handlers) {
       handlers.onSettingsChange({ newPerDay: v });
     });
     const pass = root.querySelector('#set-passphrase');
+    if (pass) pass.value = s.passphrase || '';
     if (pass) pass.addEventListener('change', () => {
       handlers.onSettingsChange({ passphrase: pass.value.trim() });
     });
