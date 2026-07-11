@@ -5,6 +5,7 @@ Entry schema: word, kana, romaji, pos, zh, ex, ex_zh
 Fonts: IPAGothic for Japanese, NotoTC for Traditional Chinese.
 """
 import glob
+import io
 import json
 import os
 import re
@@ -19,7 +20,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    BaseDocTemplate, Frame, KeepTogether, NextPageTemplate, PageBreak,
+    BaseDocTemplate, Flowable, Frame, KeepTogether, NextPageTemplate, PageBreak,
     PageTemplate, Paragraph, Spacer, Table, TableStyle,
 )
 from reportlab.platypus.tableofcontents import TableOfContents
@@ -97,6 +98,23 @@ def esc(s):
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+class PageProbe(Flowable):
+    """Zero-size flowable that records the page it is drawn on into `sink[key]`.
+    Placed inside each entry's KeepTogether so it shares the entry's page."""
+
+    def __init__(self, key, sink):
+        super().__init__()
+        self.key = key
+        self.sink = sink
+        self.width = self.height = 0
+
+    def wrap(self, *_):
+        return (0, 0)
+
+    def draw(self):
+        self.sink[self.key] = self.canv.getPageNumber()
+
+
 LEVEL = (sys.argv[1] if len(sys.argv) > 1 else "n5").lower()
 
 
@@ -159,6 +177,11 @@ class BookTemplate(BaseDocTemplate):
             self.notify("TOCEntry", (0, text, self.page))
             self.canv.bookmarkPage(text)
             self.canv.addOutlineEntry(text, text, 0)
+        elif isinstance(flowable, Paragraph) and flowable.style.name == "IdxHeading":
+            # PDF outline entry only — deliberately NOT a TOC entry, so adding the
+            # index does not lengthen the TOC or shift content page numbers.
+            self.canv.bookmarkPage("index")
+            self.canv.addOutlineEntry("索引", "index", 0)
 
 
 S = {
@@ -178,10 +201,92 @@ S = {
     "ex": ParagraphStyle("ex", fontName=JP, fontSize=10.5, leading=16, wordWrap="CJK"),
     "ex_zh": ParagraphStyle("ex_zh", fontName=TC, fontSize=9.5, leading=13,
                             textColor=GRAY, wordWrap="CJK"),
+    "idx_title": ParagraphStyle("IdxHeading", fontName=TC, fontSize=16, leading=22,
+                                textColor=colors.white, backColor=ACCENT,
+                                borderPadding=(4, 8, 5, 8), spaceBefore=6, spaceAfter=10),
+    "idx_row": ParagraphStyle("idx_row", fontName=TC, fontSize=13, leading=18,
+                              textColor=colors.white, backColor=ACCENT,
+                              borderPadding=(2, 6, 3, 6), spaceBefore=8, spaceAfter=4),
+    "idx_word": ParagraphStyle("idx_word", fontName=JP, fontSize=9.5, leading=13,
+                               wordWrap="CJK"),
+    "idx_page": ParagraphStyle("idx_page", fontName=TC, fontSize=9.5, leading=13,
+                               alignment=2, textColor=ACCENT),
 }
 
+# gojūon rows: label -> the hiragana that start that row
+GOJUON = [
+    ("あ", "あいうえお"),
+    ("か", "かがきぎくぐけげこご"),
+    ("さ", "さざしじすずせぜそぞ"),
+    ("た", "ただちぢつづてでとど"),
+    ("な", "なにぬねの"),
+    ("は", "はばぱひびぴふぶぷへべぺほぼぽ"),
+    ("ま", "まみむめも"),
+    ("や", "やゆよ"),
+    ("ら", "らりるれろ"),
+    ("わ", "わゐゑをん"),
+]
+_SMALL = str.maketrans("ぁぃぅぇぉっゃゅょゎゕゖ", "あいうえおつやゆよわかけ")
 
-def entry_flowable(idx, e):
+
+def _kata_to_hira(s):
+    return "".join(chr(ord(c) - 0x60) if "ァ" <= c <= "ヶ" else c for c in s)
+
+
+def _sort_key(word, kana):
+    k = _kata_to_hira(kana).translate(_SMALL).replace("ー", "").replace("・", "")
+    return (k, word)
+
+
+def _row_label(word, kana):
+    k = _sort_key(word, kana)[0]
+    first = k[0] if k else ""
+    for label, chars in GOJUON:
+        if first in chars:
+            return label
+    return "その他"
+
+
+def build_index_flowables(index_pages):
+    """Return flowables for a gojūon-ordered word index (3 columns, page-aligned)."""
+    from collections import defaultdict
+    rows = defaultdict(list)
+    for (word, kana), page in index_pages.items():
+        rows[_row_label(word, kana)].append((word, kana, page))
+
+    flow = [Paragraph("索引（五十音順）", S["idx_title"]), Spacer(1, 2 * mm)]
+    order = [lbl for lbl, _ in GOJUON] + ["その他"]
+    NCOL = 3
+    word_w, page_w = 48 * mm, 10 * mm
+    for label in order:
+        items = rows.get(label)
+        if not items:
+            continue
+        items.sort(key=lambda t: _sort_key(t[0], t[1]))
+        flow.append(Paragraph(label, S["idx_row"]))
+        cells = []
+        for word, kana, page in items:
+            txt = f'{esc(word)}<font name="{JP}" size="7" color="#999999">（{esc(kana)}）</font>'
+            cells.append(Paragraph(txt, S["idx_word"]))
+            cells.append(Paragraph(str(page), S["idx_page"]))
+        # pad to a whole number of rows (NCOL word/page pairs per row)
+        per_row = NCOL * 2
+        while len(cells) % per_row:
+            cells.append("")
+        data = [cells[i:i + per_row] for i in range(0, len(cells), per_row)]
+        tbl = Table(data, colWidths=[word_w, page_w] * NCOL)
+        tbl.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 1),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+            ("TOPPADDING", (0, 0), (-1, -1), 1),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+        ]))
+        flow.append(tbl)
+    return flow
+
+
+def entry_flowable(idx, e, sink):
     num = f'<font color="#999999" size="9">{idx:03d}</font>'
     word = f'{num}&nbsp;&nbsp;<b>{esc(e["word"])}</b>'
     reading = f'{esc(e["kana"])}<br/><font name="NotoTC" size="9" color="#888888">{esc(e["romaji"])}</font>'
@@ -220,7 +325,37 @@ def entry_flowable(idx, e):
                       ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                       ("LINEBELOW", (0, -1), (-1, -1), 0.4, colors.HexColor("#CCCCCC")),
                   ]))
-    return KeepTogether([block, Spacer(1, 5)])
+    probe = PageProbe((e["word"], e["kana"]), sink)
+    return KeepTogether([block, Spacer(1, 5), probe])
+
+
+def make_content_story(categories, total, sink):
+    """Fresh cover + TOC + all entries. Rebuilt each build (flowables are consumed).
+    Each entry drops its (word, kana) -> page into `sink` when drawn."""
+    story = [
+        Spacer(1, 70 * mm),
+        Paragraph(f"JLPT {LEVEL.upper()} 單字書", S["title"]),
+        Spacer(1, 8 * mm),
+        Paragraph(f"共 {total} 詞　·　假名讀音／羅馬拼音／詞性／中譯／例句", S["subtitle"]),
+        Paragraph(f"{date.today():%Y-%m-%d}", S["subtitle"]),
+        NextPageTemplate("body"),
+        PageBreak(),
+        Paragraph("目錄", S["toc_title"]),
+    ]
+    toc = TableOfContents()
+    toc.levelStyles = [ParagraphStyle("toc0", fontName=TC, fontSize=11, leading=18)]
+    story += [toc, PageBreak()]
+
+    idx = 0
+    for ci, cat in enumerate(categories):
+        if ci:
+            story.append(PageBreak())
+        story.append(Paragraph(
+            f'{esc(cat["category"])}（{len(cat["entries"])} 詞）', S["cat"]))
+        for e in cat["entries"]:
+            idx += 1
+            story.append(entry_flowable(idx, e, sink))
+    return story
 
 
 def main():
@@ -231,37 +366,23 @@ def main():
         for w, first_cat, cat in dupes:
             print(f"  {w}  (kept in「{first_cat}」, dropped from「{cat}」)")
 
-    story = []
-    # cover
-    story.append(Spacer(1, 70 * mm))
-    story.append(Paragraph(f"JLPT {LEVEL.upper()} 單字書", S["title"]))
-    story.append(Spacer(1, 8 * mm))
-    story.append(Paragraph(f"共 {total} 詞　·　假名讀音／羅馬拼音／詞性／中譯／例句",
-                           S["subtitle"]))
-    story.append(Paragraph(f"{date.today():%Y-%m-%d}", S["subtitle"]))
-    story.append(NextPageTemplate("body"))
-    story.append(PageBreak())
-
-    # TOC
-    story.append(Paragraph("目錄", S["toc_title"]))
-    toc = TableOfContents()
-    toc.levelStyles = [ParagraphStyle("toc0", fontName=TC, fontSize=11, leading=18)]
-    story.append(toc)
-    story.append(PageBreak())
-
-    idx = 0
-    for ci, cat in enumerate(categories):
-        if ci:
-            story.append(PageBreak())
-        story.append(Paragraph(
-            f'{esc(cat["category"])}（{len(cat["entries"])} 詞）', S["cat"]))
-        for e in cat["entries"]:
-            idx += 1
-            story.append(entry_flowable(idx, e))
-
     out = f"{LEVEL.upper()}單字書.pdf"
+    # Pass 1: build content only, into a throwaway buffer, to learn each word's
+    # printed page. The index is NOT in the TOC, so appending it in pass 2 leaves
+    # every content page number unchanged — the captured pages stay valid.
+    index_pages = {}
+    BookTemplate(io.BytesIO()).multiBuild(
+        make_content_story(categories, total, index_pages))
+    missing = total - len(index_pages)
+
+    # Pass 2: content + gojūon index, into the real file.
+    story = make_content_story(categories, total, {})
+    story.append(PageBreak())
+    story += build_index_flowables(index_pages)
     BookTemplate(out).multiBuild(story)
-    print(f"OK: {out} — {total} entries, {len(categories)} categories")
+    note = f" ({missing} entries missing page refs)" if missing else ""
+    print(f"OK: {out} — {total} entries, {len(categories)} categories, "
+          f"{len(index_pages)} indexed{note}")
 
 
 if __name__ == "__main__":
