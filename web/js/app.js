@@ -67,14 +67,23 @@ function buildPracticeQueue() {
   return ids;
 }
 function renderDone(stage) {
+  const empty = pool.length === 0;
   stage.innerHTML = `
     <div class="done">
-      <div class="done-emoji">🎉</div>
-      <p class="done-msg">今日到期已複習完</p>
-      <button type="button" id="practice-btn" class="practice-btn">繼續練習（提前複習）</button>
+      <div class="done-emoji">${empty ? '📚' : '🎉'}</div>
+      <p class="done-msg">${empty ? '這個範圍沒有單字' : '今日到期已複習完'}</p>
+      <p class="done-hint">${empty
+        ? '請在上方至少選一個級別（N5–N1），主題「全部」時涵蓋整級。'
+        : '目前範圍今天的到期字與新字都做完了。'}</p>
+      ${empty ? '' : '<button type="button" id="practice-btn" class="practice-btn">繼續練習（提前複習）</button>'}
     </div>`;
   const btn = stage.querySelector('#practice-btn');
-  if (btn) btn.onclick = () => { queue = buildPracticeQueue(); next(); };
+  if (btn) btn.onclick = () => {
+    const q = buildPracticeQueue();
+    if (!q.length) { renderDone(stage); return; }
+    queue = q;
+    next();
+  };
 }
 
 function renderAll() {

@@ -383,7 +383,8 @@ button {
   color: var(--ink);
 }
 .done-emoji { font-size: 52px; line-height: 1; animation: popIn 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-.done-msg { font-size: 22px; margin: 14px 0 22px; }
+.done-msg { font-size: 22px; margin: 14px 0 6px; }
+.done-hint { font-family: var(--font-body); font-size: 13.5px; color: var(--ink-dim); margin: 0 auto 20px; max-width: 300px; line-height: 1.6; }
 .practice-btn {
   font-family: var(--font-body);
   font-size: 17px;
