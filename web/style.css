@@ -488,6 +488,136 @@ button {
   border-color: var(--shu);
 }
 
+/* ---------------------------------------------------------- falling mode */
+
+.falling-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: min(68vh, 600px);
+  min-height: 400px;
+}
+
+.fall-hud {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+.fall-lives { font-size: 15px; letter-spacing: 3px; }
+.fall-score b {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--ink);
+  margin-left: 4px;
+}
+.fall-combo {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  color: var(--shu);
+  animation: comboPop .28s cubic-bezier(.2, 1.6, .4, 1);
+}
+.fall-combo[hidden] { display: none; }
+.fall-combo b { font-family: var(--font-mono); font-size: 16px; color: var(--shu); margin-left: 2px; }
+
+.fall-field {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background:
+    repeating-linear-gradient(115deg, transparent 0 26px, rgba(255, 255, 255, 0.025) 26px 27px),
+    linear-gradient(180deg, var(--surface-2), transparent 55%);
+  border: 1px solid var(--border);
+  box-shadow: inset var(--shadow-sm);
+}
+
+.fall-floor {
+  position: relative;
+  height: 4px;
+  margin: 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--shu) 15%, var(--kin) 50%, var(--shu) 85%, transparent);
+  box-shadow: 0 0 16px 1px var(--shu-glow);
+  animation: floorPulse 2.2s ease-in-out infinite;
+}
+
+.fall-tile {
+  position: absolute;
+  top: 0;
+  width: 120px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  overflow: hidden;
+  will-change: transform;
+  transition: border-color .15s ease, box-shadow .15s ease, background .2s ease;
+}
+.fall-tile:hover:not(.gone) { border-color: var(--sumi); }
+
+.ft-text {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: clamp(13px, 3.4vw, 15.5px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.fall-meaning .ft-text {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: clamp(12px, 3.2vw, 14px);
+}
+.ft-sub {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-dim);
+}
+
+.fall-tile.picked {
+  border-color: var(--kin);
+  background: var(--surface-strong);
+  box-shadow: 0 0 0 3px var(--kin-glow);
+}
+
+.fall-tile.shake { animation: shakeTile .4s ease; border-color: var(--shu); }
+
+.fall-tile.gone {
+  pointer-events: none;
+  transition: opacity .24s ease, filter .24s ease;
+}
+.fall-tile.fall-clear {
+  opacity: 0;
+  border-color: var(--shu);
+  box-shadow: 0 0 0 4px var(--kin-glow);
+}
+.fall-tile.fall-clear .ft-text { animation: ftClearPop .3s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+
+.fall-tile.fall-miss {
+  opacity: 0;
+  filter: grayscale(1) blur(1px);
+  border-color: var(--sumi);
+}
+
 /* ---------------------------------------------------------- typing & quiz cards */
 
 .card-wrap {
@@ -658,6 +788,15 @@ button {
 @keyframes confettiFall {
   from { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
   to   { transform: translateY(100vh) translateX(var(--drift)) rotate(var(--rot)); opacity: 0.15; }
+}
+@keyframes floorPulse {
+  0%, 100% { opacity: .65; }
+  50%      { opacity: 1; }
+}
+@keyframes ftClearPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.35) rotate(-4deg); }
+  100% { transform: scale(0.6) rotate(4deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
