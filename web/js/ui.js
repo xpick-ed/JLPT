@@ -142,6 +142,13 @@ export function renderChrome(root, state, dataByLevel, handlers) {
             <span>音效</span>
             <input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}>
           </label>
+          <label class="field">
+            <span>配對內容（配對／落下）</span>
+            <select id="set-pairmode">
+              <option value="meaning">中文意思</option>
+              <option value="reading">假名讀音（只出漢字詞）</option>
+            </select>
+          </label>
           <div class="settings-actions">
             <button type="button" class="btn-ghost" id="set-reset">重置設定</button>
             <button type="button" class="btn-primary" id="set-close">完成</button>
@@ -190,6 +197,11 @@ export function renderChrome(root, state, dataByLevel, handlers) {
     if (snd) snd.addEventListener('change', () => {
       handlers.onSettingsChange({ sound: snd.checked });
     });
+    const pm = root.querySelector('#set-pairmode');
+    if (pm) {
+      pm.value = s.pairMode || 'meaning';
+      pm.addEventListener('change', () => handlers.onSettingsChange({ pairMode: pm.value }));
+    }
     const reset = root.querySelector('#set-reset');
     if (reset) reset.addEventListener('click', () => {
       if (!confirm('確定要將設定重置為預設值嗎？（不會刪除學習進度）')) return;

@@ -23,14 +23,17 @@ function shuffle(arr) {
  * onResult(id, grade): called once per matched pair
  * audio: {hit(combo), wrong(), clear()}
  */
-export function mountMatch(root, cards, onResult, audio) {
+export function mountMatch(root, cards, onResult, audio, pairMode = 'meaning') {
   const tiles = [];
   for (const c of cards) {
-    // Japanese tile: katakana / hiragana words show themselves; kanji words show
-    // the kanji WITH its kana reading (so it reads as Japanese and can't collide
-    // with the identical-looking Chinese meaning tile, e.g. 概念（がいねん） vs 概念).
-    tiles.push({ id: c.id, type: 'word', text: c.word, sub: c.word === c.kana ? '' : c.kana });
-    tiles.push({ id: c.id, type: 'meaning', text: c.zh, sub: '' });
+    // 'meaning' mode pairs the word ↔ its Chinese meaning; the word tile shows the
+    // kanji WITH its reading so it can't collide with the identical Chinese tile.
+    // 'reading' mode pairs the kanji word ↔ its kana reading, so the word tile
+    // must HIDE the reading (that's the answer). App filters to kanji-only words.
+    const wordSub = pairMode === 'reading' ? '' : (c.word === c.kana ? '' : c.kana);
+    const otherText = pairMode === 'reading' ? c.kana : c.zh;
+    tiles.push({ id: c.id, type: 'word', text: c.word, sub: wordSub });
+    tiles.push({ id: c.id, type: 'meaning', text: otherText, sub: '' });
   }
   const order = shuffle(tiles);
 

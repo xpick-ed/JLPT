@@ -24,7 +24,9 @@ async function loadLevels(levels) {
 function rebuildPool() {
   const cats = state.settings.categories;
   pool = state.settings.levels.flatMap(lv => dataByLevel[lv] || [])
-    .filter(c => cats.length === 0 || cats.includes(c.category));
+    .filter(c => cats.length === 0 || cats.includes(c.category))
+    // reading mode pairs kanji ↔ its kana reading, so only kanji words (word≠kana)
+    .filter(c => state.settings.pairMode !== 'reading' || c.word !== c.kana);
   queue = buildQueue(state, pool.map(c => c.id), Date.now());
 }
 const byId = id => pool.find(c => c.id === id);
@@ -51,7 +53,7 @@ function next() {
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
     if (six.length < 1) return renderDone(stage);
-    mountMatch(stage, six, onResult, audio);
+    mountMatch(stage, six, onResult, audio, state.settings.pairMode);
   } else {
     const id = queue.shift();
     if (!id) return renderDone(stage);
@@ -72,7 +74,7 @@ function startFalling() {
   if (stopFalling) { stopFalling(); stopFalling = null; }
   const stage = document.getElementById('stage');
   if (pool.length === 0) return renderDone(stage);
-  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, audio, onGameOver);
+  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, audio, onGameOver, state.settings.pairMode);
 }
 function onGameOver({ score, maxCombo }) {
   if (stopFalling) { stopFalling(); stopFalling = null; }

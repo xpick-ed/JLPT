@@ -22,7 +22,7 @@ const LIVES = 3;
 const TILE_H = 64;         // must match .fall-tile height in CSS
 const MAX_ACTIVE = 8;      // stop spawning above this many live tiles
 
-export function mountFalling(root, supply, onResult, audio, onGameOver) {
+export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode = 'meaning') {
   root.classList.add('falling-mode');
   root.innerHTML = `
     <div class="fall-hud">
@@ -59,9 +59,12 @@ export function mountFalling(root, supply, onResult, audio, onGameOver) {
     const w = field.clientWidth;
     const lanes = [0.08 + Math.random() * 0.34, 0.55 + Math.random() * 0.34];
     if (Math.random() < 0.5) lanes.reverse();
+    // 'reading' mode: word tile hides the reading (it's the answer), meaning tile
+    // shows the kana; 'meaning' mode: word shows kanji+reading, meaning shows zh.
+    const showSub = pairMode !== 'reading' && c.word !== c.kana;
     const specs = [
-      { type: 'word', html: c.word + (c.word !== c.kana ? `<span class="ft-sub">${c.kana}</span>` : '') },
-      { type: 'meaning', html: c.zh },
+      { type: 'word', html: c.word + (showSub ? `<span class="ft-sub">${c.kana}</span>` : '') },
+      { type: 'meaning', html: pairMode === 'reading' ? c.kana : c.zh },
     ];
     specs.forEach((s, i) => {
       const el = document.createElement('button');
