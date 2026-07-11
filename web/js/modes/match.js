@@ -26,10 +26,10 @@ function shuffle(arr) {
 export function mountMatch(root, cards, onResult, audio) {
   const tiles = [];
   for (const c of cards) {
-    // Match mode shows only the word's most-common written form (kanji / kana /
-    // katakana, as stored in `word`) ↔ its Chinese meaning; no reading here
-    // (reading practice lives in typing mode).
-    tiles.push({ id: c.id, type: 'word', text: c.word, sub: '' });
+    // Japanese tile: katakana / hiragana words show themselves; kanji words show
+    // the kanji WITH its kana reading (so it reads as Japanese and can't collide
+    // with the identical-looking Chinese meaning tile, e.g. 概念（がいねん） vs 概念).
+    tiles.push({ id: c.id, type: 'word', text: c.word, sub: c.word === c.kana ? '' : c.kana });
     tiles.push({ id: c.id, type: 'meaning', text: c.zh, sub: '' });
   }
   const order = shuffle(tiles);
