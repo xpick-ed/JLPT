@@ -8,12 +8,21 @@ import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
+import { mountGrammarOrder } from './modes/grammar-order.js';
 import { WORKER_URL } from '../config.js';
 
 const state = { ...loadState() };
 let mode = 'match';
-let data = { vocab: {}, grammar: {} };   // data[content][lv] = [cards]
-const activeData = () => data[state.settings.content];
+let data = { vocab: {}, grammar: {}, grammar_order: {} };   // data[deck][lv] = [cards]
+// A deck is the data source for the current (content, mode). Grammar's two modes
+// read different files, so the source is keyed by deck, not just content.
+function deckFor(content, m) {
+  if (content !== 'grammar') return 'vocab';
+  return m === 'order' ? 'grammar_order' : 'grammar';
+}
+const activeDeck = () => deckFor(state.settings.content, mode);
+const activeData = () => data[activeDeck()];
+const DECK_PREFIX = { vocab: '', grammar: 'grammar_', grammar_order: 'grammar_order_' };
 let pool = [];             // filtered candidate cards
 let queue = [];            // ids to review this session
 let stopFalling = null;
@@ -27,9 +36,9 @@ function applyTheme(theme) {
 }
 applyTheme(state.settings.theme);
 
-async function loadLevels(content, levels) {
-  const bucket = data[content];
-  const prefix = content === 'grammar' ? 'grammar_' : '';
+async function loadLevels(deck, levels) {
+  const bucket = data[deck];
+  const prefix = DECK_PREFIX[deck];
   for (const lv of levels) if (!bucket[lv])
     bucket[lv] = await (await fetch(`data/${prefix}${lv}.json`)).json();
 }
@@ -68,7 +77,9 @@ function next() {
     if (!id) return renderDone(stage);
     const item = byId(id);
     if (!item) return renderDone(stage);
-    return mountGrammarCloze(stage, item, pool, onResult, audio);
+    return mode === 'order'
+      ? mountGrammarOrder(stage, item, pool, onResult, audio)
+      : mountGrammarCloze(stage, item, pool, onResult, audio);
   }
   if (mode === 'falling') return startFalling();
   if (mode === 'match') {
@@ -142,16 +153,16 @@ function renderDone(stage) {
 
 function renderAll() {
   renderChrome(document.getElementById('chrome'), state, activeData(), {
-    onModeChange: m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; next(); },
+    onModeChange: async m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); next(); },
     onContentChange: async c => {
       if (stopFalling) { stopFalling(); stopFalling = null; }
       state.settings.content = c;
       mode = c === 'grammar' ? 'cloze' : 'match';
       state.updated = Date.now();
-      await loadLevels(c, state.settings.levels);
+      await loadLevels(activeDeck(), state.settings.levels);
       rebuildPool(); persist(); next();
     },
-    onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(state.settings.content, lv); rebuildPool(); persist(); next(); },
+    onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(activeDeck(), lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
     onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
   });
@@ -171,7 +182,8 @@ addEventListener('pagehide', () => {
     if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
     push(WORKER_URL, await hashKey(state.settings.passphrase), state);
   }
-  await loadLevels(state.settings.content, state.settings.levels);
+  if (state.settings.content === 'grammar') mode = 'cloze';
+  await loadLevels(activeDeck(), state.settings.levels);
   rebuildPool();
   renderAll();
   next();
