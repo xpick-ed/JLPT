@@ -1,4 +1,4 @@
-export const DEFAULT_SETTINGS = { newPerDay: 50, levels: ['n2'], categories: [], sound: true, pairMode: 'meaning', theme: 'system' };
+export const DEFAULT_SETTINGS = { newPerDay: 50, levels: ['n2'], categories: [], sound: true, pairMode: 'meaning', theme: 'system', content: 'vocab' };
 const KEY = 'vocabmatch.state';
 
 export function emptyState() {

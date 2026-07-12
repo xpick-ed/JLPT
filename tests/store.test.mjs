@@ -23,3 +23,7 @@ test('mergeStates settings follow larger top-level updated', () => {
   assert.equal(mergeStates(a,b).settings.newPerDay, 30);
   assert.equal(mergeStates(a,b).updated, 99);
 });
+
+test('DEFAULT_SETTINGS has content vocab and loadState fills it', () => {
+  assert.equal(DEFAULT_SETTINGS.content, 'vocab');
+});
