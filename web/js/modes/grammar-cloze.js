@@ -1,4 +1,5 @@
 import { particles, stamp } from '../ui.js';
+import { furiganaToRuby } from '../furigana.js';
 
 // wrong→again; fast→easy; slow→hard; else good. Mirrors gradeQuiz thresholds.
 export function gradeCloze({ correct, elapsedMs }) {
@@ -6,15 +7,6 @@ export function gradeCloze({ correct, elapsedMs }) {
   if (elapsedMs < 1500) return 'easy';
   if (elapsedMs > 5000) return 'hard';
   return 'good';
-}
-
-// 漢字（かな） → <ruby>漢字<rt>かな</rt></ruby>. A run of kanji immediately
-// followed by full-width parens becomes ruby; everything else is untouched.
-export function furiganaToRuby(s) {
-  return String(s).replace(
-    /([一-鿿々〆ヶ]+)（([^（）]*)）/g,
-    '<ruby>$1<rt>$2</rt></ruby>'
-  );
 }
 
 // Build the post-answer explanation panel (句型/接續/用法/例句中譯) + 下一題 button.
