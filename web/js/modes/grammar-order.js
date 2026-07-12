@@ -74,7 +74,7 @@ export function mountGrammarOrder(root, item, pool, onResult, audio) {
       slot.type = 'button';
       slot.className = 'ord-slot' + (k < placed.length ? ' filled' : '');
       slot.innerHTML = k < placed.length ? furiganaToRuby(tray[placed[k]].f) : '';
-      if (!answered && k < placed.length) slot.onclick = () => { placed.splice(k, 1); renderSlots(); renderTray(); };
+      if (k < placed.length) slot.onclick = () => { if (answered) return; placed.splice(k, 1); renderSlots(); renderTray(); };
       slotsEl.appendChild(slot);
     }
   }
