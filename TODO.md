@@ -9,7 +9,10 @@
   - 落下模式（falling.js）: 成對卡下落、點兩張相配消除、3 命落地扣命、成功依耗時記 SRS、漸快、Game Over+再玩一次；發卡用 queue.slice() 快照不動 session 佇列
   - 配對內容切換（settings.pairMode meaning/reading）: 讀音模式＝漢字↔假名讀音、只出漢字詞（word≠kana）、藏讀音；套用配對＋落下＋四選一（quiz 讀音模式：出漢字、四個假名讀音選一，pickDistractors 加 field 參數）
   - 視覺已現代化改版（現代基底＋日文點綴）: style.css 全 token 化、Inter+Zen Kaku Gothic New+Noto Sans TC 字型、乾淨近白/近黑雙主題、去飄動背景、柔陰影、朱紅單一強調色；新增手動主題鈕 ☀/☾/◐（settings.theme system/dark/light，app.js applyTheme 設 root data-theme）。Playwright 對照圖已驗證、0 console error
-  - 下一步（使用者提過、未動工）: 文法遊戲「接續四選一」用 557 句型
+  - 文法四選一（grammar cloze）已上線: 頂部「單字/文法」大切換、文法獨立 SRS；例句挖空選句型、振假名 ruby、中文意思提示。web/js/modes/grammar-cloze.js（gradeCloze/furiganaToRuby）+ build_grammar_cloze.py（驗證/輸出）+ store content 設定 + app/ui/css。spec/plan 於 docs/superpowers/。opus 終審 Ready、修了 reset-in-grammar desync。
+    - 題庫: 目前只生了 N3 fixture（39 題，agent 生成＋對抗式審稿，抓掉 10 個雙解誘答）→ web/data/grammar_n3.json。N5/N4/N2/N1 仍是空陣列。**待使用者點頭生五級全量**（用 data/grammar_cloze_items/_source 抽題→generate→adversarial verify→build_grammar_cloze.py）。
+    - 小事: renderDone 空池文案寫死「沒有單字」，文法模式下也顯示單字字樣（可改）。
+  - 待決定（B、C 子專案）: 句子排列重組（★ 並べ替え，需生成 4 片段題庫）、閱讀（読解，最大、需撰寫文章+題目，獨立專案最後做）
   - 待使用者一次性設定: (1) 給 GitHub PAT workflow scope 才能推 .github/workflows/pages.yml（現為本機提交）+ Pages 來源設 GitHub Actions；(2) 部署 Cloudflare Worker（worker/README.md）+ 填 web/config.js 的 WORKER_URL + 設同步密碼
 - 素材: build_vocab_pdf.py / build_grammar_pdf.py（level 參數 n5-n1）、data/(grammar_)<lv>_part*.json、<LV>單字書/文法句型書.pdf、JLPT_N5-N1_*.csv（單字普通+Anki、文法 Anki）
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
