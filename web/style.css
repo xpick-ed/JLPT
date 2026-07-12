@@ -894,6 +894,39 @@ button {
   color: var(--ink);
 }
 
+/* ---------------------------------------------------------- daily reading */
+
+.read-wrap { max-width: 720px; margin: 0 auto; }
+.read-hint { font-size: 14px; color: var(--ink-dim); margin: 4px 0 18px; line-height: 1.7; }
+.read-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 620px) { .read-grid { grid-template-columns: 1fr 1fr; } }
+.read-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: transform .12s ease, border-color .15s ease, box-shadow .2s ease;
+}
+.read-card:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: var(--shadow-lg); }
+.read-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.read-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--ink); }
+.read-level {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--shu-ink);
+  background: var(--shu);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.read-desc { font-size: 13px; color: var(--ink-dim); line-height: 1.6; margin: 0 0 10px; }
+.read-go { font-size: 13px; font-weight: 700; color: var(--shu); }
+.read-foot { font-size: 12px; color: var(--ink-dim); text-align: center; margin-top: 18px; }
+
 /* ---------------------------------------------------------- fx: stamp / particle / confetti */
 
 .stamp-mark {
