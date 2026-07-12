@@ -152,8 +152,8 @@ function renderDone(stage) {
 }
 
 function renderAll() {
-  renderChrome(document.getElementById('chrome'), state, activeData(), {
-    onModeChange: async m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); next(); },
+  renderChrome(document.getElementById('chrome'), state, activeData, {
+    onModeChange: async m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); renderAll(); next(); },
     onContentChange: async c => {
       if (stopFalling) { stopFalling(); stopFalling = null; }
       state.settings.content = c;

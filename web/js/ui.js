@@ -112,12 +112,13 @@ function computeStats(state, dataByLevel) {
   return { due, fresh };
 }
 
-export function renderChrome(root, state, dataByLevel, handlers) {
+export function renderChrome(root, state, getData, handlers) {
   function afterAsync(maybePromise) {
     Promise.resolve(maybePromise).then(render);
   }
 
   function render() {
+    const dataByLevel = getData();
     const { due, fresh } = computeStats(state, dataByLevel);
     const cats = categoriesFor(state, dataByLevel);
     const s = state.settings;
