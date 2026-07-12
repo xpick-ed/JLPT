@@ -7,11 +7,13 @@ import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
 import { mountFalling } from './modes/falling.js';
+import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { WORKER_URL } from '../config.js';
 
 const state = { ...loadState() };
 let mode = 'match';
-let dataByLevel = {};      // { n2: [cards] }
+let data = { vocab: {}, grammar: {} };   // data[content][lv] = [cards]
+const activeData = () => data[state.settings.content];
 let pool = [];             // filtered candidate cards
 let queue = [];            // ids to review this session
 let stopFalling = null;
@@ -25,16 +27,20 @@ function applyTheme(theme) {
 }
 applyTheme(state.settings.theme);
 
-async function loadLevels(levels) {
-  for (const lv of levels) if (!dataByLevel[lv])
-    dataByLevel[lv] = await (await fetch(`data/${lv}.json`)).json();
+async function loadLevels(content, levels) {
+  const bucket = data[content];
+  const prefix = content === 'grammar' ? 'grammar_' : '';
+  for (const lv of levels) if (!bucket[lv])
+    bucket[lv] = await (await fetch(`data/${prefix}${lv}.json`)).json();
 }
 function rebuildPool() {
   const cats = state.settings.categories;
-  pool = state.settings.levels.flatMap(lv => dataByLevel[lv] || [])
+  const byLv = activeData();
+  pool = state.settings.levels.flatMap(lv => byLv[lv] || [])
     .filter(c => cats.length === 0 || cats.includes(c.category))
-    // reading mode pairs kanji ↔ its kana reading, so only kanji words (word≠kana)
-    .filter(c => state.settings.pairMode !== 'reading' || c.word !== c.kana);
+    // reading mode (vocab only) pairs kanji ↔ kana, so only kanji words (word≠kana)
+    .filter(c => state.settings.content !== 'vocab'
+      || state.settings.pairMode !== 'reading' || c.word !== c.kana);
   queue = buildQueue(state, pool.map(c => c.id), Date.now());
 }
 const byId = id => pool.find(c => c.id === id);
@@ -57,6 +63,13 @@ function onResult(id, grade) {
 }
 function next() {
   const stage = document.getElementById('stage');
+  if (state.settings.content === 'grammar') {
+    const id = queue.shift();
+    if (!id) return renderDone(stage);
+    const item = byId(id);
+    if (!item) return renderDone(stage);
+    return mountGrammarCloze(stage, item, pool, onResult, audio);
+  }
   if (mode === 'falling') return startFalling();
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
@@ -128,9 +141,17 @@ function renderDone(stage) {
 }
 
 function renderAll() {
-  renderChrome(document.getElementById('chrome'), state, dataByLevel, {
+  renderChrome(document.getElementById('chrome'), state, activeData(), {
     onModeChange: m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; next(); },
-    onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(lv); rebuildPool(); persist(); next(); },
+    onContentChange: async c => {
+      if (stopFalling) { stopFalling(); stopFalling = null; }
+      state.settings.content = c;
+      mode = c === 'grammar' ? 'cloze' : 'match';
+      state.updated = Date.now();
+      await loadLevels(c, state.settings.levels);
+      rebuildPool(); persist(); next();
+    },
+    onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(state.settings.content, lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
     onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
   });
@@ -150,7 +171,7 @@ addEventListener('pagehide', () => {
     if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
     push(WORKER_URL, await hashKey(state.settings.passphrase), state);
   }
-  await loadLevels(state.settings.levels);
+  await loadLevels(state.settings.content, state.settings.levels);
   rebuildPool();
   renderAll();
   next();
