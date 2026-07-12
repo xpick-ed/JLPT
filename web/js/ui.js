@@ -14,6 +14,7 @@ const MODES_BY_CONTENT = {
   ],
   grammar: [
     { id: 'cloze', label: '四選一' },
+    { id: 'order', label: '排列重組' },
   ],
 };
 
