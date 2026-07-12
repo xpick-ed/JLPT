@@ -1,12 +1,21 @@
 import { DEFAULT_SETTINGS } from './store.js';
 
 const LEVELS = ['n5', 'n4', 'n3', 'n2', 'n1'];
-const MODES = [
-  { id: 'match', label: '配對' },
-  { id: 'typing', label: '打字' },
-  { id: 'quiz', label: '四選一' },
-  { id: 'falling', label: '落下' },
+const CONTENTS = [
+  { id: 'vocab', label: '單字' },
+  { id: 'grammar', label: '文法' },
 ];
+const MODES_BY_CONTENT = {
+  vocab: [
+    { id: 'match', label: '配對' },
+    { id: 'typing', label: '打字' },
+    { id: 'quiz', label: '四選一' },
+    { id: 'falling', label: '落下' },
+  ],
+  grammar: [
+    { id: 'cloze', label: '四選一' },
+  ],
+};
 
 let currentMode = 'match';
 let settingsOpen = false;
@@ -111,13 +120,18 @@ export function renderChrome(root, state, dataByLevel, handlers) {
     const { due, fresh } = computeStats(state, dataByLevel);
     const cats = categoriesFor(state, dataByLevel);
     const s = state.settings;
+    const modes = MODES_BY_CONTENT[s.content] || MODES_BY_CONTENT.vocab;
+    if (!modes.some(m => m.id === currentMode)) currentMode = modes[0].id;
 
     root.innerHTML = `
       <div class="chrome-inner">
         <div class="chrome-row chrome-top">
           <div class="brand"><span class="hanko" aria-hidden="true">字</span><span class="brand-name">JLPT 單字道場</span></div>
+          <div class="content-switch" role="tablist" aria-label="內容">
+            ${CONTENTS.map(c => `<button type="button" class="content-tab${c.id === s.content ? ' active' : ''}" data-content="${c.id}" role="tab" aria-selected="${c.id === s.content}">${c.label}</button>`).join('')}
+          </div>
           <nav class="tabs" role="tablist" aria-label="遊戲模式">
-            ${MODES.map(m => `<button type="button" class="tab${m.id === currentMode ? ' active' : ''}" data-mode="${m.id}" role="tab" aria-selected="${m.id === currentMode}">${m.label}</button>`).join('')}
+            ${modes.map(m => `<button type="button" class="tab${m.id === currentMode ? ' active' : ''}" data-mode="${m.id}" role="tab" aria-selected="${m.id === currentMode}">${m.label}</button>`).join('')}
           </nav>
           <div class="chrome-actions">
             <button type="button" class="theme-btn" aria-label="切換主題" title="${THEME_META[s.theme]?.title || THEME_META.system.title}">${THEME_META[s.theme]?.icon || THEME_META.system.icon}</button>
@@ -172,6 +186,13 @@ export function renderChrome(root, state, dataByLevel, handlers) {
       currentMode = btn.dataset.mode;
       render();
       handlers.onModeChange(currentMode);
+    }));
+
+    root.querySelectorAll('.content-tab').forEach(btn => btn.addEventListener('click', () => {
+      const c = btn.dataset.content;
+      if (c === s.content) return;
+      currentMode = (MODES_BY_CONTENT[c] || MODES_BY_CONTENT.vocab)[0].id;
+      afterAsync(handlers.onContentChange(c));
     }));
 
     root.querySelector('.gear-btn').addEventListener('click', () => {
