@@ -9,6 +9,7 @@ import { mountQuiz } from './modes/quiz.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
+import { mountReading } from './modes/reading.js';
 import { WORKER_URL } from '../config.js';
 
 const state = { ...loadState() };
@@ -72,6 +73,7 @@ function onResult(id, grade) {
 }
 function next() {
   const stage = document.getElementById('stage');
+  if (state.settings.content === 'reading') return mountReading(stage);
   if (state.settings.content === 'grammar') {
     const id = queue.shift();
     if (!id) return renderDone(stage);
@@ -159,8 +161,8 @@ function renderAll() {
       state.settings.content = c;
       mode = c === 'grammar' ? 'cloze' : 'match';
       state.updated = Date.now();
-      await loadLevels(activeDeck(), state.settings.levels);
-      rebuildPool(); persist(); next();
+      if (c !== 'reading') { await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); }
+      persist(); next();
     },
     onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(activeDeck(), lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
@@ -183,8 +185,10 @@ addEventListener('pagehide', () => {
     push(WORKER_URL, await hashKey(state.settings.passphrase), state);
   }
   if (state.settings.content === 'grammar') mode = 'cloze';
-  await loadLevels(activeDeck(), state.settings.levels);
-  rebuildPool();
+  if (state.settings.content !== 'reading') {
+    await loadLevels(activeDeck(), state.settings.levels);
+    rebuildPool();
+  }
   renderAll();
   next();
 })();
