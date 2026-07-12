@@ -4,6 +4,7 @@ const LEVELS = ['n5', 'n4', 'n3', 'n2', 'n1'];
 const CONTENTS = [
   { id: 'vocab', label: '單字' },
   { id: 'grammar', label: '文法' },
+  { id: 'reading', label: '閱讀' },
 ];
 const MODES_BY_CONTENT = {
   vocab: [
@@ -16,6 +17,7 @@ const MODES_BY_CONTENT = {
     { id: 'cloze', label: '四選一' },
     { id: 'order', label: '排列重組' },
   ],
+  reading: [],
 };
 
 let currentMode = 'match';
@@ -123,7 +125,8 @@ export function renderChrome(root, state, getData, handlers) {
     const cats = categoriesFor(state, dataByLevel);
     const s = state.settings;
     const modes = MODES_BY_CONTENT[s.content] || MODES_BY_CONTENT.vocab;
-    if (!modes.some(m => m.id === currentMode)) currentMode = modes[0].id;
+    if (modes.length && !modes.some(m => m.id === currentMode)) currentMode = modes[0].id;
+    const reading = s.content === 'reading';
 
     root.innerHTML = `
       <div class="chrome-inner">
@@ -132,15 +135,15 @@ export function renderChrome(root, state, getData, handlers) {
           <div class="content-switch" role="tablist" aria-label="內容">
             ${CONTENTS.map(c => `<button type="button" class="content-tab${c.id === s.content ? ' active' : ''}" data-content="${c.id}" role="tab" aria-selected="${c.id === s.content}">${c.label}</button>`).join('')}
           </div>
-          <nav class="tabs" role="tablist" aria-label="遊戲模式">
+          ${reading ? '' : `<nav class="tabs" role="tablist" aria-label="遊戲模式">
             ${modes.map(m => `<button type="button" class="tab${m.id === currentMode ? ' active' : ''}" data-mode="${m.id}" role="tab" aria-selected="${m.id === currentMode}">${m.label}</button>`).join('')}
-          </nav>
+          </nav>`}
           <div class="chrome-actions">
             <button type="button" class="theme-btn" aria-label="切換主題" title="${THEME_META[s.theme]?.title || THEME_META.system.title}">${THEME_META[s.theme]?.icon || THEME_META.system.icon}</button>
             <button type="button" class="gear-btn" aria-label="設定" aria-expanded="${settingsOpen}">⚙</button>
           </div>
         </div>
-        <div class="chrome-row chrome-filters">
+        ${reading ? '' : `<div class="chrome-row chrome-filters">
           <div class="chip-row levels" role="group" aria-label="級別">
             ${LEVELS.map(lv => `<button type="button" class="chip level-chip${s.levels.includes(lv) ? ' active' : ''}" data-lv="${lv}">${lv.toUpperCase()}</button>`).join('')}
           </div>
@@ -148,11 +151,11 @@ export function renderChrome(root, state, getData, handlers) {
             <button type="button" class="chip cat-chip${s.categories.length === 0 ? ' active' : ''}" data-cat="">全部</button>
             ${cats.map(c => `<button type="button" class="chip cat-chip${s.categories.includes(c) ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('')}
           </div>
-        </div>
-        <div class="chrome-row chrome-stats">
+        </div>`}
+        ${reading ? '' : `<div class="chrome-row chrome-stats">
           <span class="stat stat-due">待複習 <b>${due}</b></span>
           <span class="stat stat-new">新單字 <b>${fresh}</b></span>
-        </div>
+        </div>`}
       </div>
       <div class="settings-panel"${settingsOpen ? '' : ' hidden'}>
         <div class="settings-inner">
@@ -193,7 +196,8 @@ export function renderChrome(root, state, getData, handlers) {
     root.querySelectorAll('.content-tab').forEach(btn => btn.addEventListener('click', () => {
       const c = btn.dataset.content;
       if (c === s.content) return;
-      currentMode = (MODES_BY_CONTENT[c] || MODES_BY_CONTENT.vocab)[0].id;
+      const ms = MODES_BY_CONTENT[c] || [];
+      if (ms.length) currentMode = ms[0].id;
       afterAsync(handlers.onContentChange(c));
     }));
 
