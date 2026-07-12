@@ -64,6 +64,7 @@ def build_level(items, lv, seen):
             "answer": raw["answer"],
             "after": raw["after"],
             "distractors": raw["distractors"],
+            "connection": raw.get("connection", ""),
             "note": raw["note"],
             "ex_zh": raw["ex_zh"],
         })

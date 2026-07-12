@@ -17,10 +17,25 @@ export function furiganaToRuby(s) {
   );
 }
 
+// Build the post-answer explanation panel (句型/接續/用法/例句中譯) + 下一題 button.
+// meaning_zh is omitted here because it is already shown as the pre-answer hint.
+function explainHtml(item) {
+  const row = (k, v) => v ? `<div class="ex-row"><span class="ex-k">${k}</span><span class="ex-v">${v}</span></div>` : '';
+  return `
+    <div class="cloze-explain">
+      <div class="ex-pattern">${item.pattern}</div>
+      ${row('接續', item.connection)}
+      ${row('用法', item.note)}
+      ${row('中譯', item.ex_zh)}
+      <button type="button" class="cloze-next">下一題 →</button>
+    </div>`;
+}
+
 /**
  * Mount one grammar cloze round.
- * item: { id, meaning_zh, before, answer, after, distractors:[3], ... }
- * onResult(id, grade) is called once, after the reveal delay.
+ * item: { id, meaning_zh, before, answer, after, distractors:[3], pattern, connection, note, ex_zh }
+ * After the user answers, the correct answer is revealed and an explanation
+ * panel is shown; onResult(id, grade) fires when the user clicks 下一題.
  */
 export function mountGrammarCloze(root, item, pool, onResult, audio) {
   const start = performance.now();
@@ -43,12 +58,15 @@ export function mountGrammarCloze(root, item, pool, onResult, audio) {
     if (blank) { blank.textContent = item.answer; blank.classList.add('filled'); }
   }
 
+  let answered = false;
   for (const opt of options) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'opt';
     b.textContent = opt.t;
     b.onclick = () => {
+      if (answered) return;
+      answered = true;
       const elapsedMs = performance.now() - start;
       const grade = gradeCloze({ correct: opt.correct, elapsedMs });
       b.classList.add(opt.correct ? 'right' : 'wrong');
@@ -65,7 +83,13 @@ export function mountGrammarCloze(root, item, pool, onResult, audio) {
       reveal();
       stamp(b, opt.correct);
       [...box.children].forEach(c => (c.disabled = true));
-      setTimeout(() => onResult(item.id, grade), 700);
+      // Show the explanation and let the user advance when ready.
+      card_.insertAdjacentHTML('beforeend', explainHtml(item));
+      const next = card_.querySelector('.cloze-next');
+      if (next) {
+        next.addEventListener('click', () => onResult(item.id, grade));
+        next.focus();
+      }
     };
     box.appendChild(b);
   }
