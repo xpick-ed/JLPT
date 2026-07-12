@@ -14,7 +14,7 @@
     - 題庫已生五級全量共 623 題（N5 86／N4 113／N3 152／N2 164／N1 108），data/grammar_cloze_items/<lv>.json → web/data/grammar_<lv>.json。用 generate→對抗式 verify 的 workflow（44 chunk、88 agent）產出；重建檢查＋validator 丟掉無法還原原句者（N1 最多）與句首型（empty before），不出壞題。要重生用 build_grammar_cloze.py。
     - 小事: renderDone 空池文案寫死「沒有單字」，文法模式下也顯示單字字樣（可改）。
   - 排列重組（grammar order / 並べ替え）已上線: 文法第二模式，deck 概念（vocab/grammar/grammar_order 各自題庫）。點選 4 片段排序、填滿自動判定整句、答完顯示完整句＋解說＋下一題。web/js/modes/grammar-order.js（gradeOrder/checkOrder）+ build_grammar_order.py + furiganaToRuby 抽成 web/js/furigana.js。opus 終審 Ready、修了 stale-chrome deck binding（renderChrome 改吃 getter）。
-    - 題庫: 只生了 N3 fixture（10 題，unique-order 對抗式審稿）→ web/data/grammar_order_n3.json。N5/N4/N2/N1 空。**待使用者點頭生五級全量**（同 workflow；verify prompt 要強制修正雙解後仍保持剛好 4 片段，否則掉題）。
+    - 題庫已生五級全量共 506 題（N5 47／N4 90／N3 118／N2 153／N1 98），data/grammar_order_items/<lv>.json → web/data/grammar_order_<lv>.json。generate→unique-order verify workflow（46 chunk、92 agent）；verify 強制修正雙解後保留剛好 4 片段（本輪 0 掉在非4片段）；重建檢查丟掉無法還原原句者（N1 最多）。N5 良率低＝短句難切出唯一解 4 段。
   - 待決定（C 子專案）: 閱讀（読解，最大、需撰寫文章+題目，獨立專案最後做）
   - 更新模式決定: B/C 題庫用「大池＋SRS」（approach 1），不做即時生成/後端；靠題庫夠大＋SRS 每天出新題。
   - 待使用者一次性設定: (1) 給 GitHub PAT workflow scope 才能推 .github/workflows/pages.yml（現為本機提交）+ Pages 來源設 GitHub Actions；(2) 部署 Cloudflare Worker（worker/README.md）+ 填 web/config.js 的 WORKER_URL + 設同步密碼
