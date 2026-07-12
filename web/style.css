@@ -748,6 +748,52 @@ button {
 .card-wrap.correct-flash { animation: cardGlow .5s ease; }
 .card-wrap.shake { animation: shakeTile .4s ease; }
 
+/* ---------------------------------------------------------- grammar cloze */
+
+.content-switch {
+  display: flex;
+  gap: 3px;
+  background: var(--surface-2);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.content-tab {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  transition: color .18s ease, background .22s ease;
+  white-space: nowrap;
+}
+.content-tab.active { color: var(--ink); background: var(--surface-strong); }
+
+.cloze-wrap { max-width: 560px; }
+.cloze-hint {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-bottom: 16px;
+}
+.cloze-sentence {
+  font-family: var(--font-display);
+  font-size: clamp(17px, 4.4vw, 22px);
+  line-height: 2.1;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.cloze-sentence rt { font-size: 0.5em; color: var(--ink-dim); font-weight: 500; }
+.cloze-blank {
+  display: inline-block;
+  min-width: 72px;
+  margin: 0 5px;
+  border-bottom: 2px dashed var(--shu);
+  color: var(--shu);
+  font-weight: 700;
+  vertical-align: bottom;
+}
+.cloze-blank.filled { border-bottom-style: solid; }
+
 /* ---------------------------------------------------------- fx: stamp / particle / confetti */
 
 .stamp-mark {
