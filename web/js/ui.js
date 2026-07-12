@@ -242,7 +242,7 @@ export function renderChrome(root, state, dataByLevel, handlers) {
     const reset = root.querySelector('#set-reset');
     if (reset) reset.addEventListener('click', () => {
       if (!confirm('確定要將設定重置為預設值嗎？（不會刪除學習進度）')) return;
-      handlers.onSettingsChange({ ...DEFAULT_SETTINGS, passphrase: '' });
+      handlers.onSettingsChange({ ...DEFAULT_SETTINGS, content: s.content, passphrase: '' });
     });
     const close = root.querySelector('#set-close');
     if (close) close.addEventListener('click', () => {
