@@ -1,5 +1,4 @@
-// Falling-match mode. Pure helpers first; mountFalling (the rAF engine) is
-// added in a later task.
+// Falling-match mode. Pure helpers first; mountFalling (the rAF engine) below.
 
 export function gradeFalling(elapsedMs) {
   if (elapsedMs < 2500) return 'easy';
@@ -9,8 +8,8 @@ export function gradeFalling(elapsedMs) {
 
 export function nextDifficulty(cleared) {
   return {
-    fallSpeed: Math.min(180, 60 + cleared * 2),
-    spawnInterval: Math.max(700, 1800 - cleared * 40),
+    fallSpeed: Math.min(90, 34 + cleared * 1.5),
+    spawnInterval: Math.max(900, 2000 - cleared * 30),
   };
 }
 
@@ -20,8 +19,22 @@ export function isLanded(tileY, tileH, floorY) {
 
 const LIVES = 3;
 const TILE_H = 64;         // must match .fall-tile height in CSS
-const MAX_ACTIVE = 8;      // stop spawning above this many live tiles
+const MAX_ACTIVE = 10;     // stop spawning above this many live tiles
 
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Falling mode: single tiles fall one at a time from a small shuffled buffer, so
+ * a word and its answer arrive decoupled and other pairs' tiles act as decoys.
+ * Match two live tiles with the same pairId + different type to clear the pair;
+ * a tile reaching the floor purges its whole pair and costs one life.
+ */
 export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode = 'meaning') {
   root.classList.add('falling-mode');
   root.innerHTML = `
@@ -39,7 +52,9 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
   const comboEl = root.querySelector('.fall-combo b');
 
   let lives = LIVES, score = 0, combo = 0, maxCombo = 0, cleared = 0;
-  let pairs = [];            // { id, spawnedAt, tiles:[el,el], done }
+  let tiles = [];            // live: { el, pairId, type, spawnedAt }
+  let buffer = [];           // pending specs: { pairId, type, html }
+  const firstSpawn = new Map(); // pairId -> earliest spawn time (for grading)
   let selected = null;       // { el, pairId, type }
   let lastSpawn = 0, lastFrame = 0, raf = 0, running = true;
 
@@ -51,54 +66,60 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     comboWrap.hidden = combo < 2;
   }
 
-  function spawnPair() {
+  // Keep the buffer stocked with at least one card's two halves, shuffled so a
+  // pair's halves interleave with other pairs (but always spawn close in time).
+  function refill() {
+    if (buffer.length >= 2) return;
     const c = supply();
     if (!c) return;
-    const now = performance.now();
-    const pair = { id: c.id, spawnedAt: now, tiles: [], done: false };
-    const w = field.clientWidth;
-    const lanes = [0.08 + Math.random() * 0.34, 0.55 + Math.random() * 0.34];
-    if (Math.random() < 0.5) lanes.reverse();
     // 'reading' mode: word tile hides the reading (it's the answer), meaning tile
     // shows the kana; 'meaning' mode: word shows kanji+reading, meaning shows zh.
     const showSub = pairMode !== 'reading' && c.word !== c.kana;
-    const specs = [
-      { type: 'word', html: c.word + (showSub ? `<span class="ft-sub">${c.kana}</span>` : '') },
-      { type: 'meaning', html: pairMode === 'reading' ? c.kana : c.zh },
-    ];
-    specs.forEach((s, i) => {
-      const el = document.createElement('button');
-      el.type = 'button';
-      el.className = `fall-tile fall-${s.type}`;
-      el.dataset.pairId = c.id;
-      el.dataset.type = s.type;
-      el.innerHTML = `<span class="ft-text">${s.html}</span>`;
-      el.style.left = (lanes[i] * (w - 120)) + 'px';
-      el._y = -TILE_H - i * 40;   // stagger start
-      el.style.transform = `translateY(${el._y}px)`;
-      field.appendChild(el);
-      pair.tiles.push(el);
-    });
-    pairs.push(pair);
+    buffer.push(
+      { pairId: c.id, type: 'word', html: c.word + (showSub ? `<span class="ft-sub">${c.kana}</span>` : '') },
+      { pairId: c.id, type: 'meaning', html: pairMode === 'reading' ? c.kana : c.zh },
+    );
+    shuffle(buffer);
+  }
+
+  function spawnOne() {
+    refill();
+    const spec = buffer.shift();
+    if (!spec) return;
+    const now = performance.now();
+    const w = field.clientWidth;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = `fall-tile fall-${spec.type}`;
+    el.dataset.pairId = spec.pairId;
+    el.dataset.type = spec.type;
+    el.innerHTML = `<span class="ft-text">${spec.html}</span>`;
+    el.style.left = ((0.05 + Math.random() * 0.72) * (w - 120)) + 'px';
+    el._y = -TILE_H;
+    el.style.transform = `translateY(${el._y}px)`;
+    field.appendChild(el);
+    tiles.push({ el, pairId: spec.pairId, type: spec.type, spawnedAt: now });
+    if (!firstSpawn.has(spec.pairId)) firstSpawn.set(spec.pairId, now);
     lastSpawn = now;
   }
 
-  function activeCount() {
-    return field.querySelectorAll('.fall-tile:not(.gone)').length;
+  function removeTile(rec, cls) {
+    rec.el.classList.add('gone', cls);
+    setTimeout(() => rec.el.remove(), 260);
+    tiles = tiles.filter(t => t !== rec);
   }
 
-  function removePair(pair, cls) {
-    pair.done = true;
-    for (const el of pair.tiles) {
-      el.classList.add('gone', cls);
-      setTimeout(() => el.remove(), 260);
-    }
-    pairs = pairs.filter(p => p !== pair);
+  // Remove every live tile of a pair, drop any still-buffered half (no orphan),
+  // and forget its grade timer.
+  function purgePair(pairId, cls) {
+    for (const t of tiles.filter(t => t.pairId === pairId)) removeTile(t, cls);
+    buffer = buffer.filter(s => s.pairId !== pairId);
+    firstSpawn.delete(pairId);
+    if (selected && selected.pairId === pairId) selected = null;
   }
 
-  function failPair(pair) {
-    if (selected && selected.pairId === pair.id) { selected = null; }
-    removePair(pair, 'fall-miss');
+  function handleLand(rec) {
+    purgePair(rec.pairId, 'fall-miss');
     lives -= 1;
     combo = 0;
     audio.wrong();
@@ -106,12 +127,14 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     if (lives <= 0) end();
   }
 
-  function matchPair(pair) {
+  function matchPair(pairId) {
+    const start = firstSpawn.get(pairId);
+    onResult(pairId, gradeFalling(performance.now() - (start ?? performance.now())));
     combo += 1; maxCombo = Math.max(maxCombo, combo);
     score += 10 * combo; cleared += 1;
     audio.hit(combo);
-    onResult(pair.id, gradeFalling(performance.now() - pair.spawnedAt));
-    removePair(pair, 'fall-clear');
+    for (const t of tiles.filter(t => t.pairId === pairId)) removeTile(t, 'fall-clear');
+    firstSpawn.delete(pairId);
     renderHud();
   }
 
@@ -124,10 +147,10 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     const samePair = selected.pairId === el.dataset.pairId;
     const bothTypes = selected.type !== el.dataset.type;
     if (samePair && bothTypes) {
-      const pair = pairs.find(p => p.id === selected.pairId && !p.done);
+      const pairId = selected.pairId;
       selected.el.classList.remove('picked');
       selected = null;
-      if (pair) matchPair(pair);
+      matchPair(pairId);
     } else {
       selected.el.classList.remove('picked'); selected.el.classList.add('shake');
       el.classList.add('shake');
@@ -142,18 +165,13 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     const dt = lastFrame ? (now - lastFrame) : 16;
     lastFrame = now;
     const { fallSpeed, spawnInterval } = nextDifficulty(cleared);
-    if (now - lastSpawn >= spawnInterval && activeCount() < MAX_ACTIVE) spawnPair();
+    if (now - lastSpawn >= spawnInterval && tiles.length < MAX_ACTIVE) spawnOne();
     const fy = floorY();
-    for (const pair of pairs.slice()) {
-      if (pair.done) continue;
-      let landed = false;
-      for (const el of pair.tiles) {
-        if (el.classList.contains('gone')) continue;
-        el._y += fallSpeed * dt / 1000;
-        el.style.transform = `translateY(${el._y}px)`;
-        if (isLanded(el._y, TILE_H, fy)) landed = true;
-      }
-      if (landed) failPair(pair);
+    for (const rec of tiles.slice()) {
+      if (rec.el.classList.contains('gone')) continue;
+      rec.el._y += fallSpeed * dt / 1000;
+      rec.el.style.transform = `translateY(${rec.el._y}px)`;
+      if (isLanded(rec.el._y, TILE_H, fy)) handleLand(rec);
     }
     raf = requestAnimationFrame(frame);
   }

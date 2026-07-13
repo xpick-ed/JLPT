@@ -12,11 +12,11 @@ test('gradeFalling by elapsed time', () => {
 });
 
 test('nextDifficulty ramps and clamps', () => {
-  assert.deepEqual(nextDifficulty(0), { fallSpeed: 60, spawnInterval: 1800 });
-  assert.deepEqual(nextDifficulty(10), { fallSpeed: 80, spawnInterval: 1400 });
+  assert.deepEqual(nextDifficulty(0), { fallSpeed: 34, spawnInterval: 2000 });
+  assert.deepEqual(nextDifficulty(10), { fallSpeed: 49, spawnInterval: 1700 });
   const hot = nextDifficulty(100000);
-  assert.equal(hot.fallSpeed, 180);       // clamped
-  assert.equal(hot.spawnInterval, 700);   // clamped
+  assert.equal(hot.fallSpeed, 90);        // clamped
+  assert.equal(hot.spawnInterval, 900);   // clamped
 });
 
 test('isLanded when tile bottom reaches floor', () => {

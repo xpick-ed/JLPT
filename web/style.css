@@ -542,7 +542,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: min(68vh, 600px);
+  height: min(80vh, 720px);
   min-height: 400px;
 }
 
