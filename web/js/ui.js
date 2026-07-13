@@ -127,6 +127,7 @@ export function renderChrome(root, state, getData, handlers) {
     const modes = MODES_BY_CONTENT[s.content] || MODES_BY_CONTENT.vocab;
     if (modes.length && !modes.some(m => m.id === currentMode)) currentMode = modes[0].id;
     const reading = s.content === 'reading';
+    const account = handlers.getAccount ? handlers.getAccount() : null;
 
     root.innerHTML = `
       <div class="chrome-inner">
@@ -164,10 +165,15 @@ export function renderChrome(root, state, getData, handlers) {
             <span>每日新字上限</span>
             <input type="number" id="set-newperday" min="1" max="500" value="${s.newPerDay}">
           </label>
-          <label class="field">
-            <span>同步密語（passphrase）</span>
-            <input type="text" id="set-passphrase" placeholder="留空＝不同步" autocomplete="off">
-          </label>
+          <div class="field">
+            <span>帳號</span>
+            ${account
+              ? `<div class="account-in">
+                   <div class="account-id"><b>${account.name || ''}</b><span>${account.email || ''}</span></div>
+                   <button type="button" class="btn-ghost" id="set-signout">登出</button>
+                 </div>`
+              : `<div id="g-signin" class="g-signin"></div><p class="account-hint">登入後跨裝置同步進度</p>`}
+          </div>
           <label class="field field-row">
             <span>音效</span>
             <input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}>
@@ -231,11 +237,8 @@ export function renderChrome(root, state, getData, handlers) {
       const v = Math.max(1, parseInt(npd.value, 10) || DEFAULT_SETTINGS.newPerDay);
       handlers.onSettingsChange({ newPerDay: v });
     });
-    const pass = root.querySelector('#set-passphrase');
-    if (pass) pass.value = s.passphrase || '';
-    if (pass) pass.addEventListener('change', () => {
-      handlers.onSettingsChange({ passphrase: pass.value.trim() });
-    });
+    const signout = root.querySelector('#set-signout');
+    if (signout) signout.addEventListener('click', () => handlers.onSignOut());
     const snd = root.querySelector('#set-sound');
     if (snd) snd.addEventListener('change', () => {
       handlers.onSettingsChange({ sound: snd.checked });
@@ -248,13 +251,15 @@ export function renderChrome(root, state, getData, handlers) {
     const reset = root.querySelector('#set-reset');
     if (reset) reset.addEventListener('click', () => {
       if (!confirm('確定要將設定重置為預設值嗎？（不會刪除學習進度）')) return;
-      handlers.onSettingsChange({ ...DEFAULT_SETTINGS, content: s.content, passphrase: '' });
+      handlers.onSettingsChange({ ...DEFAULT_SETTINGS, content: s.content });
     });
     const close = root.querySelector('#set-close');
     if (close) close.addEventListener('click', () => {
       settingsOpen = false;
       render();
     });
+    const gmount = root.querySelector('#g-signin');
+    if (gmount && handlers.mountSignIn) handlers.mountSignIn(gmount);
   }
 
   render();
