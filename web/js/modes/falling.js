@@ -8,8 +8,8 @@ export function gradeFalling(elapsedMs) {
 
 export function nextDifficulty(cleared) {
   return {
-    fallSpeed: Math.min(90, 34 + cleared * 1.5),
-    spawnInterval: Math.max(900, 2000 - cleared * 30),
+    fallSpeed: Math.min(50, 22 + cleared * 0.7),
+    spawnInterval: Math.max(700, 1200 - cleared * 20),
   };
 }
 
@@ -19,7 +19,7 @@ export function isLanded(tileY, tileH, floorY) {
 
 const LIVES = 3;
 const TILE_H = 64;         // must match .fall-tile height in CSS
-const MAX_ACTIVE = 10;     // stop spawning above this many live tiles
+const MAX_ACTIVE = 12;     // stop spawning above this many live tiles
 
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
