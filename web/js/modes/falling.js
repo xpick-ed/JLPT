@@ -19,6 +19,7 @@ export function isLanded(tileY, tileH, floorY) {
 
 const LIVES = 3;
 const TILE_H = 64;         // must match .fall-tile height in CSS
+const TILE_W = 120;        // must match .fall-tile width in CSS
 const MAX_ACTIVE = 12;     // stop spawning above this many live tiles
 
 function shuffle(a) {
@@ -83,22 +84,35 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
   }
 
   function spawnOne() {
+    // Lane-based spawning so tiles never overlap: split the width into columns
+    // and only drop into a lane whose highest tile has already cleared the top.
+    const w = field.clientWidth;
+    const laneCount = Math.max(2, Math.floor(w / (TILE_W + 8)));
+    const free = [];
+    for (let i = 0; i < laneCount; i++) {
+      const inLane = tiles.filter(t => t.lane === i && !t.el.classList.contains('gone'));
+      const topY = inLane.length ? Math.min(...inLane.map(t => t.el._y)) : Infinity;
+      if (topY > 14) free.push(i);            // lane's top tile cleared the spawn zone (14px gap, no overlap)
+    }
+    if (!free.length) return;                  // every lane busy up top → wait a frame
     refill();
     const spec = buffer.shift();
     if (!spec) return;
     const now = performance.now();
-    const w = field.clientWidth;
+    const lane = free[Math.floor(Math.random() * free.length)];
+    const laneW = w / laneCount;
+    const x = Math.max(0, Math.min(w - TILE_W, lane * laneW + (laneW - TILE_W) / 2));
     const el = document.createElement('button');
     el.type = 'button';
     el.className = `fall-tile fall-${spec.type}`;
     el.dataset.pairId = spec.pairId;
     el.dataset.type = spec.type;
     el.innerHTML = `<span class="ft-text">${spec.html}</span>`;
-    el.style.left = ((0.05 + Math.random() * 0.72) * (w - 120)) + 'px';
+    el.style.left = x + 'px';
     el._y = -TILE_H;
     el.style.transform = `translateY(${el._y}px)`;
     field.appendChild(el);
-    tiles.push({ el, pairId: spec.pairId, type: spec.type, spawnedAt: now });
+    tiles.push({ el, pairId: spec.pairId, type: spec.type, spawnedAt: now, lane });
     if (!firstSpawn.has(spec.pairId)) firstSpawn.set(spec.pairId, now);
     lastSpawn = now;
   }
