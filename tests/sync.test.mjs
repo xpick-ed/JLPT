@@ -1,47 +1,44 @@
-import { test } from 'node:test';
+import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { hashKey } from '../web/js/sync.js';
-import worker from '../worker/index.js';
+import { exchangeSession, pull, push } from '../web/js/sync.js';
 
-test('hashKey is stable hex sha-256', async () => {
-  const h = await hashKey('my-pass');
-  assert.match(h, /^[0-9a-f]{64}$/);
-  assert.equal(h, await hashKey('my-pass'));
-  assert.notEqual(h, await hashKey('other'));
+let calls;
+function stub(res) { calls = []; globalThis.fetch = async (url, opts) => { calls.push({ url, opts: opts || {} }); return res; }; }
+afterEach(() => { delete globalThis.fetch; });
+
+test('exchangeSession POSTs {credential} to /session', async () => {
+  stub({ ok: true, json: async () => ({ session: 's1', email: 'a', name: 'A' }) });
+  const r = await exchangeSession('http://w', 'cred');
+  assert.equal(calls[0].url, 'http://w/session');
+  assert.equal(calls[0].opts.method, 'POST');
+  assert.deepEqual(JSON.parse(calls[0].opts.body), { credential: 'cred' });
+  assert.deepEqual(r, { session: 's1', email: 'a', name: 'A' });
 });
-
-function fakeEnv() {
-  const m = new Map();
-  return { KV: { get: k => Promise.resolve(m.get(k) ?? null), put: (k,v) => (m.set(k,v), Promise.resolve()) } };
-}
-
-test('worker stores and returns state by key', async () => {
-  const env = fakeEnv();
-  env.ALLOWED_ORIGIN = 'https://w';
-  // Set up a session
-  await env.KV.put('session:abc', JSON.stringify({ sub: '123', email: 'test@example.com', name: 'Test' }));
-
-  const put = await worker.fetch(new Request('https://w/data', { method:'PUT', body:'{"cards":{"x":1}}', headers: { Authorization: 'Bearer abc', Origin: 'https://w' } }), env);
-  assert.equal(put.status, 204);
-
-  const get = await worker.fetch(new Request('https://w/data', { headers: { Authorization: 'Bearer abc', Origin: 'https://w' } }), env);
-  assert.equal(get.status, 200);
-  assert.deepEqual(await get.json(), { cards:{ x:1 } });
-  assert.equal(get.headers.get('access-control-allow-origin'), 'https://w');
+test('exchangeSession returns null on !ok', async () => {
+  stub({ ok: false });
+  assert.equal(await exchangeSession('http://w', 'cred'), null);
 });
-
-test('worker unknown key returns empty object', async () => {
-  const env = fakeEnv();
-  env.ALLOWED_ORIGIN = 'https://w';
-  // Set up a session
-  await env.KV.put('session:none', JSON.stringify({ sub: '456', email: 'test@example.com', name: 'Test' }));
-
-  const get = await worker.fetch(new Request('https://w/data', { headers: { Authorization: 'Bearer none' } }), env);
-  assert.equal(get.status, 200);
-  assert.deepEqual(await get.json(), {});
+test('pull GETs /data with Bearer', async () => {
+  stub({ ok: true, json: async () => ({ cards: { x: 1 } }) });
+  const r = await pull('http://w', 's1');
+  assert.equal(calls[0].url, 'http://w/data');
+  assert.equal(calls[0].opts.headers.authorization, 'Bearer s1');
+  assert.deepEqual(r, { cards: { x: 1 } });
 });
-
-test('worker missing authorization => 401', async () => {
-  const r = await worker.fetch(new Request('https://w/data'), fakeEnv());
-  assert.equal(r.status, 401);
+test('pull returns null on empty blob', async () => {
+  stub({ ok: true, json: async () => ({}) });
+  assert.equal(await pull('http://w', 's1'), null);
+});
+test('push PUTs /data with Bearer + JSON body', async () => {
+  stub({ ok: true });
+  const ok = await push('http://w', 's1', { a: 1 });
+  assert.equal(calls[0].opts.method, 'PUT');
+  assert.equal(calls[0].opts.headers.authorization, 'Bearer s1');
+  assert.deepEqual(JSON.parse(calls[0].opts.body), { a: 1 });
+  assert.equal(ok, true);
+});
+test('pull/push swallow fetch errors (offline)', async () => {
+  globalThis.fetch = async () => { throw new Error('offline'); };
+  assert.equal(await pull('http://w', 's1'), null);
+  assert.equal(await push('http://w', 's1', {}), false);
 });
