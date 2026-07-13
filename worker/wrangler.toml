@@ -5,3 +5,7 @@ compatibility_date = "2024-01-01"
 [[kv_namespaces]]
 binding = "KV"
 id = "PASTE_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+CLIENT_ID = ""       # set to your Google OAuth Client ID (or use `wrangler secret`)
+ALLOWED_ORIGIN = ""  # e.g. https://<user>.github.io

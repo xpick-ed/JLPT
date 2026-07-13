@@ -17,20 +17,31 @@ function fakeEnv() {
 
 test('worker stores and returns state by key', async () => {
   const env = fakeEnv();
-  const put = await worker.fetch(new Request('https://w/?key=abc', { method:'PUT', body:'{"cards":{"x":1}}' }), env);
+  env.ALLOWED_ORIGIN = 'https://w';
+  // Set up a session
+  await env.KV.put('session:abc', JSON.stringify({ sub: '123', email: 'test@example.com', name: 'Test' }));
+
+  const put = await worker.fetch(new Request('https://w/data', { method:'PUT', body:'{"cards":{"x":1}}', headers: { Authorization: 'Bearer abc', Origin: 'https://w' } }), env);
   assert.equal(put.status, 204);
-  const get = await worker.fetch(new Request('https://w/?key=abc'), env);
+
+  const get = await worker.fetch(new Request('https://w/data', { headers: { Authorization: 'Bearer abc', Origin: 'https://w' } }), env);
   assert.equal(get.status, 200);
   assert.deepEqual(await get.json(), { cards:{ x:1 } });
-  assert.equal(get.headers.get('access-control-allow-origin'), '*');
+  assert.equal(get.headers.get('access-control-allow-origin'), 'https://w');
 });
 
 test('worker unknown key returns empty object', async () => {
-  const get = await worker.fetch(new Request('https://w/?key=none'), fakeEnv());
+  const env = fakeEnv();
+  env.ALLOWED_ORIGIN = 'https://w';
+  // Set up a session
+  await env.KV.put('session:none', JSON.stringify({ sub: '456', email: 'test@example.com', name: 'Test' }));
+
+  const get = await worker.fetch(new Request('https://w/data', { headers: { Authorization: 'Bearer none' } }), env);
+  assert.equal(get.status, 200);
   assert.deepEqual(await get.json(), {});
 });
 
-test('worker missing key => 400', async () => {
-  const r = await worker.fetch(new Request('https://w/'), fakeEnv());
-  assert.equal(r.status, 400);
+test('worker missing authorization => 401', async () => {
+  const r = await worker.fetch(new Request('https://w/data'), fakeEnv());
+  assert.equal(r.status, 401);
 });
