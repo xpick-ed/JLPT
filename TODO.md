@@ -18,6 +18,8 @@
   - 每日閱讀（C，改版為連結啟動器）已上線: 頂部第三個切換「閱讀」，選它時隱藏遊戲 chrome，顯示 6 個外部日語閱讀來源卡（NHK Web Easy／Watanoc／MATCHA／福娘童話集／NHK 一般／青空文庫，涵蓋 N5–N1），開新分頁 rel=noopener。web/js/modes/reading.js（SOURCES + mountReading）；閱讀走 next()/onContentChange guard 繞過 deck。純連結、無題庫/後端/理解題。Playwright 驗過、0 error、40/40。
   - 三大支柱全到位: 單字（4 模式）、文法（四選一 623／排列重組 506）、閱讀（每日連結）。
   - 更新模式決定: 閱讀採 approach ①（連現成每日日語新聞），不做即時生成/後端/AI 生文（版權與成本考量）。
+  - Google 登入 + 每人同步 已上線（取代 passphrase）: GIS 登入→Worker /session 用 tokeninfo 驗 ID token→發 60 天 session→同步帶 Bearer，資料存 user:<sub>。worker/index.js（validateClaims + /session//data//logout，CORS 鎖 ALLOWED_ORIGIN）+ web/js/auth.js（session/owner 存取 + GIS glue）+ sync.js Bearer + app.js（onCredential/signOut/syncNow）+ ui 設定帳號區。本地優先不變、登入為選配。opus 終審＋2 輪加固：帳號感知同步（applySync，換帳號不混、有純函式回歸測試防漏）、signOut 打 /logout、name/email escape。59/59 測試、Playwright 驗過、0 error。spec/plan 於 docs/superpowers/2026-07-13-*。
+    - **待使用者一次性設定才會生效**（見 worker/README.md）: (1) Google Cloud 建 OAuth 同意畫面（scope openid/email/profile、加 test users）+ Web application Client ID（授權來源填站網址）→ 填 web/config.js GOOGLE_CLIENT_ID；(2) Cloudflare Worker 設 CLIENT_ID + ALLOWED_ORIGIN、wrangler deploy → 填 web/config.js WORKER_URL；(3) 手動 Google 登入 smoke test（計畫有清單）。基本 scope+test users 免 Google 審核。
   - 待使用者一次性設定: (1) 給 GitHub PAT workflow scope 才能推 .github/workflows/pages.yml（現為本機提交）+ Pages 來源設 GitHub Actions；(2) 部署 Cloudflare Worker（worker/README.md）+ 填 web/config.js 的 WORKER_URL + 設同步密碼
 - 素材: build_vocab_pdf.py / build_grammar_pdf.py（level 參數 n5-n1）、data/(grammar_)<lv>_part*.json、<LV>單字書/文法句型書.pdf、JLPT_N5-N1_*.csv（單字普通+Anki、文法 Anki）
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
