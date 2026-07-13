@@ -231,3 +231,8 @@ addEventListener('pagehide', () => {
   renderAll();
   next();
 })();
+
+// Register the PWA service worker (offline + installable). Best-effort.
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
