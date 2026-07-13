@@ -163,6 +163,15 @@ button {
 
 .chrome-actions { display: flex; align-items: center; gap: 8px; }
 
+/* Narrow screens: brand + content-switch + actions stay on the top line;
+   the mode tabs drop to their own full-width, scrollable second line so
+   nothing (incl. ⚙/☀) gets pushed off-screen. */
+@media (max-width: 560px) {
+  .chrome-top { flex-wrap: wrap; row-gap: 8px; }
+  .tabs { order: 5; flex-basis: 100%; overflow-x: auto; justify-content: flex-start; }
+  .tabs .tab { flex: 0 0 auto; }
+}
+
 .brand {
   display: flex;
   align-items: center;
