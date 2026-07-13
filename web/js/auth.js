@@ -12,6 +12,12 @@ export function clearSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch { /* private mode */ }
 }
 
+// --- owner tag (which account the local vocabmatch.state belongs to) ---
+const OWNER_KEY = 'vocabmatch.owner';
+export function getOwner() { try { return localStorage.getItem(OWNER_KEY); } catch { return null; } }
+export function setOwner(email) { try { localStorage.setItem(OWNER_KEY, email || ''); } catch { /* private mode */ } }
+export function clearOwner() { try { localStorage.removeItem(OWNER_KEY); } catch { /* private mode */ } }
+
 // --- Google Identity Services glue (browser only; verified via Playwright/manual) ---
 function whenReady() {
   return new Promise((resolve) => {

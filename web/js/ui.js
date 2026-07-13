@@ -1,5 +1,7 @@
 import { DEFAULT_SETTINGS } from './store.js';
 
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
 const LEVELS = ['n5', 'n4', 'n3', 'n2', 'n1'];
 const CONTENTS = [
   { id: 'vocab', label: '單字' },
@@ -169,7 +171,7 @@ export function renderChrome(root, state, getData, handlers) {
             <span>帳號</span>
             ${account
               ? `<div class="account-in">
-                   <div class="account-id"><b>${account.name || ''}</b><span>${account.email || ''}</span></div>
+                   <div class="account-id"><b>${esc(account.name || '')}</b><span>${esc(account.email || '')}</span></div>
                    <button type="button" class="btn-ghost" id="set-signout">登出</button>
                  </div>`
               : `<div id="g-signin" class="g-signin"></div><p class="account-hint">登入後跨裝置同步進度</p>`}

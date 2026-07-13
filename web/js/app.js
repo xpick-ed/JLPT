@@ -1,7 +1,7 @@
-import { loadState, saveState, mergeStates } from './store.js';
+import { loadState, saveState, mergeStates, emptyState, DEFAULT_SETTINGS } from './store.js';
 import { buildQueue, applyGrade } from './session.js';
 import { exchangeSession, pull, push } from './sync.js';
-import { getSession, setSession, clearSession, initGoogle, renderButton } from './auth.js';
+import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
 import { makeAudio } from './audio.js';
 import { renderChrome } from './ui.js';
 import { mountMatch } from './modes/match.js';
@@ -155,22 +155,39 @@ function renderDone(stage) {
   };
 }
 
-async function syncNow() {
+async function syncNow(mergeLocal = true) {
   const sess = getSession();
   if (!WORKER_URL || !sess) return;
   const remote = await pull(WORKER_URL, sess.session);
-  if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
+  if (mergeLocal) {
+    if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
+  } else {
+    const base = remote || emptyState();
+    state.cards = base.cards || {};
+    state.settings = { ...DEFAULT_SETTINGS, ...(base.settings || {}) };
+    state.updated = base.updated || 0;
+    saveState(state);
+  }
   push(WORKER_URL, sess.session, state);
 }
 async function onCredential(credential) {
   const res = await exchangeSession(WORKER_URL, credential);
   if (!res) return;
+  const prevOwner = getOwner();
+  const mergeLocal = !prevOwner || prevOwner === res.email;   // anon first login, or same account → merge; different account → adopt remote
   setSession(res);
-  await syncNow();
+  await syncNow(mergeLocal);
+  setOwner(res.email);
+  mode = state.settings.content === 'grammar' ? 'cloze' : 'match';
+  if (state.settings.content !== 'reading') { await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); }
   renderAll();
+  next();
 }
 function signOut() {
+  const sess = getSession();
+  if (WORKER_URL && sess) fetch(`${WORKER_URL}/logout`, { method: 'POST', headers: { authorization: `Bearer ${sess.session}` } }).catch(() => {});
   clearSession();
+  clearOwner();
   renderAll();
 }
 

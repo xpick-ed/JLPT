@@ -8,7 +8,7 @@ globalThis.localStorage = {
   removeItem(k) { delete this._m[k]; },
 };
 
-const { getSession, setSession, clearSession } = await import('../web/js/auth.js');
+const { getSession, setSession, clearSession, getOwner, setOwner, clearOwner } = await import('../web/js/auth.js');
 
 beforeEach(() => { globalThis.localStorage._m = {}; });
 
@@ -25,4 +25,8 @@ test('clearSession removes it', () => {
 test('getSession tolerates corrupt json', () => {
   globalThis.localStorage.setItem('vocabmatch.session', '{bad');
   assert.equal(getSession(), null);
+});
+test('owner tag set/get/clear round-trip', () => {
+  setOwner('a@b.com'); assert.equal(getOwner(), 'a@b.com');
+  clearOwner(); assert.equal(getOwner(), null);
 });
