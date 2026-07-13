@@ -1,6 +1,7 @@
 import { loadState, saveState, mergeStates } from './store.js';
 import { buildQueue, applyGrade } from './session.js';
-import { hashKey, pull, push } from './sync.js';
+import { exchangeSession, pull, push } from './sync.js';
+import { getSession, setSession, clearSession, initGoogle, renderButton } from './auth.js';
 import { makeAudio } from './audio.js';
 import { renderChrome } from './ui.js';
 import { mountMatch } from './modes/match.js';
@@ -10,7 +11,7 @@ import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
 import { mountReading } from './modes/reading.js';
-import { WORKER_URL } from '../config.js';
+import { WORKER_URL, GOOGLE_CLIENT_ID } from '../config.js';
 
 const state = { ...loadState() };
 let mode = 'match';
@@ -58,9 +59,10 @@ const byId = id => pool.find(c => c.id === id);
 let pushTimer = null;
 async function persist() {
   saveState(state);
-  if (!WORKER_URL || !state.settings.passphrase) return;
+  const sess = getSession();
+  if (!WORKER_URL || !sess) return;
   clearTimeout(pushTimer);
-  pushTimer = setTimeout(async () => push(WORKER_URL, await hashKey(state.settings.passphrase), state), 3000);
+  pushTimer = setTimeout(() => push(WORKER_URL, sess.session, state), 3000);
 }
 let advancePending = false;
 function onResult(id, grade) {
@@ -153,6 +155,25 @@ function renderDone(stage) {
   };
 }
 
+async function syncNow() {
+  const sess = getSession();
+  if (!WORKER_URL || !sess) return;
+  const remote = await pull(WORKER_URL, sess.session);
+  if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
+  push(WORKER_URL, sess.session, state);
+}
+async function onCredential(credential) {
+  const res = await exchangeSession(WORKER_URL, credential);
+  if (!res) return;
+  setSession(res);
+  await syncNow();
+  renderAll();
+}
+function signOut() {
+  clearSession();
+  renderAll();
+}
+
 function renderAll() {
   renderChrome(document.getElementById('chrome'), state, activeData, {
     onModeChange: async m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); renderAll(); next(); },
@@ -167,23 +188,28 @@ function renderAll() {
     onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(activeDeck(), lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
     onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
+    getAccount: () => getSession(),
+    onSignOut: () => signOut(),
+    mountSignIn: (el) => renderButton(el),
   });
 }
 
 addEventListener('pagehide', () => {
   clearTimeout(pushTimer);
-  if (WORKER_URL && state.settings.passphrase) {
-    hashKey(state.settings.passphrase).then(k =>
-      fetch(`${WORKER_URL}?key=${k}`, { method:'PUT', headers:{'content-type':'application/json'}, body: JSON.stringify(state), keepalive: true }).catch(()=>{}));
+  const sess = getSession();
+  if (WORKER_URL && sess) {
+    fetch(`${WORKER_URL}/data`, {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${sess.session}`, 'content-type': 'application/json' },
+      body: JSON.stringify(state),
+      keepalive: true,
+    }).catch(() => {});
   }
 });
 
 (async function boot() {
-  if (WORKER_URL && state.settings.passphrase) {
-    const remote = await pull(WORKER_URL, await hashKey(state.settings.passphrase));
-    if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
-    push(WORKER_URL, await hashKey(state.settings.passphrase), state);
-  }
+  initGoogle(GOOGLE_CLIENT_ID, onCredential);   // non-blocking; sets up the sign-in callback
+  if (WORKER_URL && getSession()) await syncNow();
   if (state.settings.content === 'grammar') mode = 'cloze';
   if (state.settings.content !== 'reading') {
     await loadLevels(activeDeck(), state.settings.levels);
