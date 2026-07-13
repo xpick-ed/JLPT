@@ -1,4 +1,4 @@
-import { loadState, saveState, mergeStates, emptyState, DEFAULT_SETTINGS } from './store.js';
+import { loadState, saveState, applySync } from './store.js';
 import { buildQueue, applyGrade } from './session.js';
 import { exchangeSession, pull, push } from './sync.js';
 import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
@@ -159,16 +159,12 @@ async function syncNow(mergeLocal = true) {
   const sess = getSession();
   if (!WORKER_URL || !sess) return;
   const remote = await pull(WORKER_URL, sess.session);
-  if (mergeLocal) {
-    if (remote) { Object.assign(state, mergeStates(state, remote)); saveState(state); }
-  } else {
-    const base = remote || emptyState();
-    state.cards = base.cards || {};
-    state.settings = { ...DEFAULT_SETTINGS, ...(base.settings || {}) };
-    state.updated = base.updated || 0;
-    saveState(state);
-  }
-  push(WORKER_URL, sess.session, state);
+  const next = applySync(state, remote, mergeLocal);
+  state.cards = next.cards; state.settings = next.settings; state.updated = next.updated;
+  saveState(state);
+  // Adopt path with a failed/empty pull (remote===null) must NOT push — that would
+  // clobber the incoming account's real remote data with an empty blob on a blip.
+  if (mergeLocal || remote) push(WORKER_URL, sess.session, state);
 }
 async function onCredential(credential) {
   const res = await exchangeSession(WORKER_URL, credential);

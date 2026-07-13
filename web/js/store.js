@@ -15,6 +15,15 @@ export function mergeStates(a, b) {
   return { cards, settings, updated: Math.max(a.updated || 0, b.updated || 0) };
 }
 
+// Resolve local vs remote state on sync. mergeLocal=true → merge (same/anonymous
+// account). mergeLocal=false → ADOPT the remote wholesale (different account),
+// never carrying the previous account's cards; empty when there is no remote.
+export function applySync(local, remote, mergeLocal) {
+  if (mergeLocal) return remote ? mergeStates(local, remote) : local;
+  if (remote) return { cards: remote.cards || {}, settings: { ...DEFAULT_SETTINGS, ...(remote.settings || {}) }, updated: remote.updated || 0 };
+  return { cards: {}, settings: { ...DEFAULT_SETTINGS }, updated: 0 };
+}
+
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY);
