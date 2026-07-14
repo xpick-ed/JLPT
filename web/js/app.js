@@ -3,7 +3,7 @@ import { buildQueue, applyGrade } from './session.js';
 import { exchangeSession, pull, push } from './sync.js';
 import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
 import { makeAudio } from './audio.js';
-import { makeBgm } from './bgm.js';
+import { makeBgm, normalizeStyle } from './bgm.js';
 import { renderChrome } from './ui.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
@@ -202,7 +202,7 @@ function renderAll() {
     },
     onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(activeDeck(), lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
-    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); bgm.setEnabled(state.settings.bgm); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
+    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); bgm.setStyle(state.settings.bgm); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),
@@ -232,9 +232,9 @@ addEventListener('pagehide', () => {
   }
   renderAll();
   next();
-  // Autoplay is blocked until a user gesture, so if BGM was left on, start it
-  // on the first interaction. (Toggling it on in settings is itself a gesture.)
-  if (state.settings.bgm) {
+  // Autoplay is blocked until a user gesture, so if a BGM style was left on,
+  // start it on the first interaction. (Changing it in settings is a gesture.)
+  if (normalizeStyle(state.settings.bgm) !== 'off') {
     const arm = () => { bgm.start(); removeEventListener('pointerdown', arm); removeEventListener('keydown', arm); };
     addEventListener('pointerdown', arm);
     addEventListener('keydown', arm);

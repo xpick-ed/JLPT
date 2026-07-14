@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS } from './store.js';
+import { BGM_STYLES, normalizeStyle } from './bgm.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
@@ -180,9 +181,11 @@ export function renderChrome(root, state, getData, handlers) {
             <span>音效</span>
             <input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}>
           </label>
-          <label class="field field-row">
+          <label class="field">
             <span>背景音樂</span>
-            <input type="checkbox" id="set-bgm" ${s.bgm ? 'checked' : ''}>
+            <select id="set-bgm">
+              ${Object.entries(BGM_STYLES).map(([id, st]) => `<option value="${id}">${esc(st.label)}</option>`).join('')}
+            </select>
           </label>
           <label class="field">
             <span>配對內容（配對／落下／四選一）</span>
@@ -250,9 +253,10 @@ export function renderChrome(root, state, getData, handlers) {
       handlers.onSettingsChange({ sound: snd.checked });
     });
     const bgm = root.querySelector('#set-bgm');
-    if (bgm) bgm.addEventListener('change', () => {
-      handlers.onSettingsChange({ bgm: bgm.checked });
-    });
+    if (bgm) {
+      bgm.value = normalizeStyle(s.bgm);
+      bgm.addEventListener('change', () => handlers.onSettingsChange({ bgm: bgm.value }));
+    }
     const pm = root.querySelector('#set-pairmode');
     if (pm) {
       pm.value = s.pairMode || 'meaning';
