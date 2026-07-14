@@ -17,9 +17,9 @@ export const ARP_NOTES = [60, 62, 64, 67, 69, 72, 74, 76];
 // tunes the SAME engine; label is the Traditional-Chinese menu text.
 export const BGM_STYLES = {
   off:     { label: '關閉' },
-  ambient: { label: '空靈',      arpType: 'triangle', filterHz: 2400, padGain: 0.035, arpGain: 0.060, oct:   0, gap: [1.1, 1.6], atk: 0.40, rel: 2.2, delay: 0.38, fb: 0.30, wet: 0.22, pad: [48, 55, 60] },
-  lofi:    { label: 'lo-fi 慵懶', arpType: 'sine',     filterHz: 1300, padGain: 0.048, arpGain: 0.070, oct: -12, gap: [1.4, 1.4], atk: 0.25, rel: 2.6, delay: 0.50, fb: 0.34, wet: 0.26, pad: [43, 50, 55] },
-  bright:  { label: '輕快',      arpType: 'triangle', filterHz: 3600, padGain: 0.026, arpGain: 0.055, oct:  12, gap: [0.45, 0.5], atk: 0.05, rel: 1.1, delay: 0.28, fb: 0.22, wet: 0.18, pad: [60, 67, 72] },
+  ambient: { label: '空靈',      arpType: 'triangle', filterHz: 2400, padGain: 0.070, arpGain: 0.130, oct:   0, gap: [0.85, 1.0], atk: 0.30, rel: 2.2, delay: 0.38, fb: 0.30, wet: 0.22, pad: [48, 55, 60] },
+  lofi:    { label: 'lo-fi 慵懶', arpType: 'sine',     filterHz: 1400, padGain: 0.095, arpGain: 0.150, oct: -12, gap: [1.1, 1.2], atk: 0.20, rel: 2.6, delay: 0.50, fb: 0.34, wet: 0.26, pad: [43, 50, 55] },
+  bright:  { label: '輕快',      arpType: 'triangle', filterHz: 3600, padGain: 0.055, arpGain: 0.120, oct:  12, gap: [0.40, 0.45], atk: 0.04, rel: 1.1, delay: 0.28, fb: 0.22, wet: 0.18, pad: [60, 67, 72] },
 };
 
 // Coerce any stored value (incl. the old boolean bgm flag) to a valid style id.
@@ -50,7 +50,15 @@ export function makeBgm(style) {
   function buildVoice(S) {
     master = ctx.createGain();
     master.gain.value = 0.0001;
-    master.connect(ctx.destination);
+    // A gentle compressor as a safety limiter: notes + pad + delay can stack, so
+    // this keeps peaks from clipping into harshness even at the louder mix.
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -10;
+    comp.ratio.value = 4;
+    comp.attack.value = 0.01;
+    comp.release.value = 0.25;
+    master.connect(comp);
+    comp.connect(ctx.destination);
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
@@ -132,7 +140,7 @@ export function makeBgm(style) {
     nextNote = ctx.currentTime + 0.1;
     master.gain.cancelScheduledValues(ctx.currentTime);
     master.gain.setValueAtTime(0.0001, ctx.currentTime);
-    master.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 2.5);   // fade in
+    master.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 1.2);   // fade in (audible, quick)
     tick();
     timer = setInterval(tick, 200);
   }
