@@ -3,6 +3,7 @@ import { buildQueue, applyGrade } from './session.js';
 import { exchangeSession, pull, push } from './sync.js';
 import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
 import { makeAudio } from './audio.js';
+import { makeBgm } from './bgm.js';
 import { renderChrome } from './ui.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
@@ -29,6 +30,7 @@ let pool = [];             // filtered candidate cards
 let queue = [];            // ids to review this session
 let stopFalling = null;
 let audio = makeAudio(state.settings.sound);
+const bgm = makeBgm(state.settings.bgm);
 
 // 'system' follows prefers-color-scheme (no attribute); 'dark'/'light' force it.
 function applyTheme(theme) {
@@ -200,7 +202,7 @@ function renderAll() {
     },
     onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(activeDeck(), lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
-    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
+    onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); bgm.setEnabled(state.settings.bgm); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),
@@ -230,6 +232,13 @@ addEventListener('pagehide', () => {
   }
   renderAll();
   next();
+  // Autoplay is blocked until a user gesture, so if BGM was left on, start it
+  // on the first interaction. (Toggling it on in settings is itself a gesture.)
+  if (state.settings.bgm) {
+    const arm = () => { bgm.start(); removeEventListener('pointerdown', arm); removeEventListener('keydown', arm); };
+    addEventListener('pointerdown', arm);
+    addEventListener('keydown', arm);
+  }
 })();
 
 // Register the PWA service worker (offline + installable). Best-effort.

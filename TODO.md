@@ -6,6 +6,7 @@
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。素材齊全，靠每天執行（聽力見 LISTENING_PLAN.md）；讀解技巧＋考古題於 Phase 3-4
 - 待審稿（可選）: N1 單字/文法只做了程式驗證，未經對抗式 agent 審稿（因額度上限中止）；想要時補跑 15 個審稿 agent（同 N2 流程）
 - 網頁單字遊戲: 已完成（web/，四模式 配對/打字/四選一/落下 + SM-2 SRS + 密碼同步）。29/29 測試，opus 終審 Ready。設計/計畫於 docs/superpowers/。本機試玩：python3 -m http.server -d web 8000
+  - 背景音樂（BGM，程式合成、無版權/無檔案）已上線: web/js/bgm.js makeBgm(enabled)＝Web Audio 即時生成的平緩環境樂（C 大調五聲琶音＋sustained pad＋LFO 呼吸＋feedback delay，音量低、慢、consonant）。設定新增「背景音樂」開關（settings.bgm，預設關）；app.js setEnabled 切換＋reload 若開著則第一次互動 gesture 才啟動（autoplay 政策）。sw.js precache 加 js/bgm.js、CACHE 升 v6。midiToFreq/ARP_NOTES 有純函式測試。63/63 測試，Playwright 驗過（toggle 起 AudioContext、off→on 循環正常、除 GIS 環境噪音外 0 error）。想要不同氛圍（lofi/空靈/輕快）可再調。
   - 落下模式（falling.js）: 成對卡下落、點兩張相配消除、3 命落地扣命、成功依耗時記 SRS、漸快、Game Over+再玩一次；發卡用 queue.slice() 快照不動 session 佇列
   - 配對內容切換（settings.pairMode meaning/reading）: 讀音模式＝漢字↔假名讀音、只出漢字詞（word≠kana）、藏讀音；套用配對＋落下＋四選一（quiz 讀音模式：出漢字、四個假名讀音選一，pickDistractors 加 field 參數）
   - 視覺已現代化改版（現代基底＋日文點綴）: style.css 全 token 化、Inter+Zen Kaku Gothic New+Noto Sans TC 字型、乾淨近白/近黑雙主題、去飄動背景、柔陰影、朱紅單一強調色；新增手動主題鈕 ☀/☾/◐（settings.theme system/dark/light，app.js applyTheme 設 root data-theme）。Playwright 對照圖已驗證、0 console error

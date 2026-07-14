@@ -4,8 +4,8 @@ compatibility_date = "2024-01-01"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "PASTE_YOUR_KV_NAMESPACE_ID"
+id = "f7327c5de8de4497899e5be7a131c06e"
 
 [vars]
-CLIENT_ID = ""       # set to your Google OAuth Client ID (or use `wrangler secret`)
-ALLOWED_ORIGIN = ""  # e.g. https://<user>.github.io
+CLIENT_ID = "320699564075-6d0bm66o5bto68vsphog12tqm3m86emk.apps.googleusercontent.com"       # set to your Google OAuth Client ID (or use `wrangler secret`)
+ALLOWED_ORIGIN = "https://xpick-ed.github.io"  # e.g. https://<user>.github.io

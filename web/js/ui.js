@@ -180,6 +180,10 @@ export function renderChrome(root, state, getData, handlers) {
             <span>音效</span>
             <input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}>
           </label>
+          <label class="field field-row">
+            <span>背景音樂</span>
+            <input type="checkbox" id="set-bgm" ${s.bgm ? 'checked' : ''}>
+          </label>
           <label class="field">
             <span>配對內容（配對／落下／四選一）</span>
             <select id="set-pairmode">
@@ -244,6 +248,10 @@ export function renderChrome(root, state, getData, handlers) {
     const snd = root.querySelector('#set-sound');
     if (snd) snd.addEventListener('change', () => {
       handlers.onSettingsChange({ sound: snd.checked });
+    });
+    const bgm = root.querySelector('#set-bgm');
+    if (bgm) bgm.addEventListener('change', () => {
+      handlers.onSettingsChange({ bgm: bgm.checked });
     });
     const pm = root.querySelector('#set-pairmode');
     if (pm) {
