@@ -77,6 +77,7 @@ function onResult(id, grade) {
 }
 function next() {
   const stage = document.getElementById('stage');
+  audio.setMode(mode);                 // each mode plays its own SFX voice
   if (state.settings.content === 'reading') return mountReading(stage);
   if (state.settings.content === 'grammar') {
     const id = queue.shift();
