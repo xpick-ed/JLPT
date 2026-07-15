@@ -5,7 +5,8 @@
 - Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md。五級單字書（N5 793/N4 994/N3 1954/N2 1770/N1 1763）＋五級文法句型書（N5 90/N4 122/N3 157/N2 172/N1 130）＋聽力菜單＋N1 計畫皆完成
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。素材齊全，靠每天執行（聽力見 LISTENING_PLAN.md）；讀解技巧＋考古題於 Phase 3-4
 - 待審稿（可選）: N1 單字/文法只做了程式驗證，未經對抗式 agent 審稿（因額度上限中止）；想要時補跑 15 個審稿 agent（同 N2 流程）
-- 網頁單字遊戲: 已完成（web/，四模式 配對/打字/四選一/落下 + SM-2 SRS + 密碼同步）。29/29 測試，opus 終審 Ready。設計/計畫於 docs/superpowers/。本機試玩：python3 -m http.server -d web 8000
+- 網頁學習道場: 已完成（web/，單字四模式＋文法兩模式＋閱讀＋SM-2 SRS＋Google 登入同步）。本機試玩：`npm run dev`。
+  - 2026-07-15 學習進度改版: 新增今日目標進度條、正確率、連續天數、弱點題數與一鍵弱點複習；活動按裝置彙總，跨裝置合併不重複計數；舊 localStorage/遠端資料自動補預設值。弱點由最近 again/hard、反覆失誤或低 ease 判定。PWA v10 預快取五級全部單字/文法題庫（約 2.6 MB），真正首次安裝即可離線。品牌改為「JLPT 學習道場」，新增 `npm run dev/test/build:data`，專案說明補入 CLAUDE.md。19 個 JS 測試檔＋14 個 Python unit tests＋資料重建驗證全過。
   - 背景音樂（BGM，程式合成、無版權/無檔案、可選樣式）已上線: web/js/bgm.js makeBgm(style)＝Web Audio 即時生成的平緩環境樂（C 大調五聲琶音＋sustained pad＋LFO 呼吸＋feedback delay，音量低、consonant）。BGM_STYLES＝off/空靈(ambient)/lo-fi 慵懶(lofi)/輕快(bright)，同引擎不同參數（filter cutoff/octave/tempo/delay/osc 型別）；設定改成「背景音樂」下拉選單（settings.bgm＝樣式字串，預設 'off'）。normalizeStyle 相容舊 boolean（true→ambient、false→off）。app.js setStyle 切換（一個 AudioContext 重用、換樣式淡出淡入）＋reload 若非 off 則第一次 gesture 才啟動（autoplay 政策）。sw.js CACHE 升 v7。midiToFreq/ARP_NOTES/BGM_STYLES/normalizeStyle 有純函式測試。65/65 測試，Playwright 驗過（4 選項、預設 off 無 context、三樣式皆在同一重用 context 上 running、off↔樣式切換正常、除 GIS 環境噪音外 0 error）。想再調各樣式手感（更慢/更亮…）隨時說。
   - 落下模式（falling.js）: 成對卡下落、點兩張相配消除、3 命落地扣命、成功依耗時記 SRS、漸快、Game Over+再玩一次；發卡用 queue.slice() 快照不動 session 佇列
   - 配對內容切換（settings.pairMode meaning/reading）: 讀音模式＝漢字↔假名讀音、只出漢字詞（word≠kana）、藏讀音；套用配對＋落下＋四選一（quiz 讀音模式：出漢字、四個假名讀音選一，pickDistractors 加 field 參數）
@@ -21,9 +22,9 @@
   - 三大支柱全到位: 單字（4 模式）、文法（四選一 623／排列重組 506）、閱讀（每日連結）。
   - 更新模式決定: 閱讀採 approach ①（連現成每日日語新聞），不做即時生成/後端/AI 生文（版權與成本考量）。
   - Google 登入 + 每人同步 已上線（取代 passphrase）: GIS 登入→Worker /session 用 tokeninfo 驗 ID token→發 60 天 session→同步帶 Bearer，資料存 user:<sub>。worker/index.js（validateClaims + /session//data//logout，CORS 鎖 ALLOWED_ORIGIN）+ web/js/auth.js（session/owner 存取 + GIS glue）+ sync.js Bearer + app.js（onCredential/signOut/syncNow）+ ui 設定帳號區。本地優先不變、登入為選配。opus 終審＋2 輪加固：帳號感知同步（applySync，換帳號不混、有純函式回歸測試防漏）、signOut 打 /logout、name/email escape。59/59 測試、Playwright 驗過、0 error。spec/plan 於 docs/superpowers/2026-07-13-*。
-    - **待使用者一次性設定才會生效**（見 worker/README.md）: (1) Google Cloud 建 OAuth 同意畫面（User type=External、scope openid/email/profile、加 test users）+ Web application Client ID（授權來源填站網址）→ 填 web/config.js GOOGLE_CLIENT_ID；(2) Cloudflare Worker 設 CLIENT_ID + ALLOWED_ORIGIN、註冊 workers.dev 子網域、wrangler deploy → 填 web/config.js WORKER_URL；(3) 手動 Google 登入 smoke test（計畫有清單）。基本 scope+test users 免 Google 審核。詳細步驟已在對話給過（可整理成 docs/deploy/google-login-setup.md）。
+    - Google Client ID、Worker URL、KV 與 allowed origin 已填入 repo；仍應依 docs/deploy/google-login-setup.md 在正式站做一次雙裝置登入 smoke test。
   - PWA（可安裝 + 離線）已上線: web/manifest.json（standalone、相對路徑）+ build_icons.py 生朱紅「字」印章 icon（192/512/maskable/apple-touch，commit 進 web/icons）+ web/sw.js（precache app shell + 同源 GET stale-while-revalidate；跨源 Worker 同步/GIS/字型一律走網路不快取）+ index.html manifest/apple-touch/iOS metas + app.js 註冊 SW。手機可「加到主畫面」全螢幕、離線可玩。61/61 測試、Playwright 驗過離線重載仍渲染、0 error（一次 GIS 第三方腳本 transient 錯誤、clean rerun 無、不影響功能）。spec/plan 於 docs/superpowers/2026-07-14-*。改版記得 bump web/sw.js 的 CACHE。
-  - 待使用者一次性設定: (1) 給 GitHub PAT workflow scope 才能推 .github/workflows/pages.yml（現為本機提交）+ Pages 來源設 GitHub Actions；(2) 部署 Cloudflare Worker（worker/README.md）+ 填 web/config.js 的 WORKER_URL + 設同步密碼
+  - 部署待確認: GitHub Pages workflow 範本仍在 docs/deploy/pages.yml，尚未放入 `.github/workflows/`；正式站 Google 登入與雙裝置同步需人工 smoke test。
 - 素材: build_vocab_pdf.py / build_grammar_pdf.py（level 參數 n5-n1）、data/(grammar_)<lv>_part*.json、<LV>單字書/文法句型書.pdf、JLPT_N5-N1_*.csv（單字普通+Anki、文法 Anki）
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
 - Relevant files: STUDY_PLAN.md, N5/N4/N3單字書.pdf, build_vocab_pdf.py, data/n[345]_part*.json

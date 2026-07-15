@@ -26,6 +26,7 @@ export function review(card, grade, now) {
   }
   c.reps += 1;
   c.isNew = false;
+  c.lastGrade = grade;
   c.updated = now;
   return c;
 }

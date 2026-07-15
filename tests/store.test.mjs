@@ -6,6 +6,7 @@ test('emptyState has defaults', () => {
   const s = emptyState();
   assert.deepEqual(s.settings, DEFAULT_SETTINGS);
   assert.deepEqual(s.cards, {});
+  assert.deepEqual(s.daily, {});
 });
 
 test('mergeStates keeps newer card per id', () => {
@@ -48,4 +49,13 @@ test('applySync ADOPT takes only remote cards — no cross-account leak', () => 
 test('applySync ADOPT with no remote yields empty — no leak', () => {
   const r = applySync({ cards: { A: {} }, settings: { newPerDay: 9 }, updated: 9 }, null, false);
   assert.deepEqual(r.cards, {});
+  assert.deepEqual(r.daily, {});
+});
+
+test('mergeStates merges per-device daily activity', () => {
+  const a = { cards: {}, daily: { '2026-07-15': { phone: { reviewed: 2, updated: 2 } } }, settings: {}, updated: 2 };
+  const b = { cards: {}, daily: { '2026-07-15': { laptop: { reviewed: 3, updated: 3 } } }, settings: {}, updated: 3 };
+  const r = mergeStates(a, b);
+  assert.deepEqual(Object.keys(r.daily['2026-07-15']).sort(), ['laptop', 'phone']);
+  assert.equal(r.settings.dailyGoal, DEFAULT_SETTINGS.dailyGoal);
 });

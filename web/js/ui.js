@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS } from './store.js';
 import { BGM_STYLES, normalizeStyle } from './bgm.js';
+import { currentStreak, dailySummary, isWeakCard } from './progress.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
@@ -109,12 +110,43 @@ function computeStats(state, dataByLevel) {
   const cats = state.settings.categories;
   const poolIds = state.settings.levels.flatMap(lv => dataByLevel[lv] || [])
     .filter(c => cats.length === 0 || cats.includes(c.category))
+    .filter(c => state.settings.content !== 'vocab'
+      || state.settings.pairMode !== 'reading' || c.word !== c.kana)
     .map(c => c.id);
   const now = Date.now();
   const due = poolIds.filter(id => state.cards[id] && state.cards[id].due <= now).length;
   const freshIds = poolIds.filter(id => !state.cards[id]);
   const fresh = Math.min(freshIds.length, state.settings.newPerDay);
-  return { due, fresh };
+  const weak = poolIds.filter(id => isWeakCard(state.cards[id])).length;
+  const today = dailySummary(state);
+  const goal = Math.max(1, state.settings.dailyGoal || DEFAULT_SETTINGS.dailyGoal);
+  return { due, fresh, weak, today, goal, streak: currentStreak(state) };
+}
+
+function setText(root, selector, value) {
+  const el = root.querySelector(selector);
+  if (el) el.textContent = String(value);
+}
+
+// Update counters after each answer without rebuilding the whole navigation.
+export function updateStudyStats(root, state, getData) {
+  if (!root) return;
+  const { due, fresh, weak, today, goal, streak } = computeStats(state, getData());
+  const accuracy = today.reviewed ? Math.round(today.correct / today.reviewed * 100) : 0;
+  const progress = Math.min(100, Math.round(today.reviewed / goal * 100));
+  setText(root, '[data-stat="due"]', due);
+  setText(root, '[data-stat="fresh"]', fresh);
+  setText(root, '[data-stat="reviewed"]', today.reviewed);
+  setText(root, '[data-stat="goal"]', goal);
+  setText(root, '[data-stat="accuracy"]', `${accuracy}%`);
+  setText(root, '[data-stat="streak"]', streak);
+  setText(root, '[data-stat="weak"]', weak);
+  const bar = root.querySelector('.today-progress-fill');
+  if (bar) bar.style.width = `${progress}%`;
+  const meter = root.querySelector('.today-progress-track');
+  if (meter) meter.setAttribute('aria-valuenow', String(progress));
+  const weakBtn = root.querySelector('.weak-review-btn');
+  if (weakBtn) weakBtn.disabled = weak === 0;
 }
 
 export function renderChrome(root, state, getData, handlers) {
@@ -124,7 +156,9 @@ export function renderChrome(root, state, getData, handlers) {
 
   function render() {
     const dataByLevel = getData();
-    const { due, fresh } = computeStats(state, dataByLevel);
+    const { due, fresh, weak, today, goal, streak } = computeStats(state, dataByLevel);
+    const accuracy = today.reviewed ? Math.round(today.correct / today.reviewed * 100) : 0;
+    const progress = Math.min(100, Math.round(today.reviewed / goal * 100));
     const cats = categoriesFor(state, dataByLevel);
     const s = state.settings;
     const modes = MODES_BY_CONTENT[s.content] || MODES_BY_CONTENT.vocab;
@@ -135,7 +169,7 @@ export function renderChrome(root, state, getData, handlers) {
     root.innerHTML = `
       <div class="chrome-inner">
         <div class="chrome-row chrome-top">
-          <div class="brand"><span class="hanko" aria-hidden="true">字</span><span class="brand-name">JLPT 單字道場</span></div>
+          <div class="brand"><span class="hanko" aria-hidden="true">学</span><span class="brand-name">JLPT 學習道場</span></div>
           <div class="content-switch" role="tablist" aria-label="內容">
             ${CONTENTS.map(c => `<button type="button" class="content-tab${c.id === s.content ? ' active' : ''}" data-content="${c.id}" role="tab" aria-selected="${c.id === s.content}">${c.label}</button>`).join('')}
           </div>
@@ -156,9 +190,22 @@ export function renderChrome(root, state, getData, handlers) {
             ${cats.map(c => `<button type="button" class="chip cat-chip${s.categories.includes(c) ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('')}
           </div>
         </div>`}
-        ${reading ? '' : `<div class="chrome-row chrome-stats">
-          <span class="stat stat-due">待複習 <b>${due}</b></span>
-          <span class="stat stat-new">新單字 <b>${fresh}</b></span>
+        ${reading ? '' : `<div class="chrome-row today-progress">
+          <div class="today-progress-main">
+            <div class="today-progress-label"><span>今日進度</span><b><span data-stat="reviewed">${today.reviewed}</span> / <span data-stat="goal">${goal}</span></b></div>
+            <div class="today-progress-track" role="progressbar" aria-label="今日學習進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">
+              <span class="today-progress-fill" style="width:${progress}%"></span>
+            </div>
+          </div>
+          <div class="today-metrics" aria-label="今日學習摘要">
+            <span>正確率 <b data-stat="accuracy">${accuracy}%</b></span>
+            <span>連續 <b data-stat="streak">${streak}</b> 天</span>
+          </div>
+        </div>
+        <div class="chrome-row chrome-stats">
+          <span class="stat stat-due">待複習 <b data-stat="due">${due}</b></span>
+          <span class="stat stat-new">新內容 <b data-stat="fresh">${fresh}</b></span>
+          <button type="button" class="weak-review-btn" ${weak ? '' : 'disabled'}>弱點複習 <b data-stat="weak">${weak}</b></button>
         </div>`}
       </div>
       <div class="settings-panel"${settingsOpen ? '' : ' hidden'}>
@@ -167,6 +214,10 @@ export function renderChrome(root, state, getData, handlers) {
           <label class="field">
             <span>每日新字上限</span>
             <input type="number" id="set-newperday" min="1" max="500" value="${s.newPerDay}">
+          </label>
+          <label class="field">
+            <span>每日學習目標（題）</span>
+            <input type="number" id="set-dailygoal" min="1" max="500" value="${s.dailyGoal || DEFAULT_SETTINGS.dailyGoal}">
           </label>
           <div class="field">
             <span>帳號</span>
@@ -245,6 +296,22 @@ export function renderChrome(root, state, getData, handlers) {
     if (npd) npd.addEventListener('change', () => {
       const v = Math.max(1, parseInt(npd.value, 10) || DEFAULT_SETTINGS.newPerDay);
       handlers.onSettingsChange({ newPerDay: v });
+    });
+    const dailyGoal = root.querySelector('#set-dailygoal');
+    if (dailyGoal) dailyGoal.addEventListener('change', () => {
+      const v = Math.max(1, parseInt(dailyGoal.value, 10) || DEFAULT_SETTINGS.dailyGoal);
+      handlers.onSettingsChange({ dailyGoal: v });
+    });
+    const weakReview = root.querySelector('.weak-review-btn');
+    if (weakReview) weakReview.addEventListener('click', async () => {
+      // Weak review is a finite study session; leave the endless falling arcade
+      // mode for a regular four-choice session before building the weak queue.
+      if (currentMode === 'falling') {
+        currentMode = 'quiz';
+        render();
+        await handlers.onModeChange('quiz');
+      }
+      if (handlers.onWeakReview) handlers.onWeakReview();
     });
     const signout = root.querySelector('#set-signout');
     if (signout) signout.addEventListener('click', () => handlers.onSignOut());

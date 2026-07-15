@@ -26,3 +26,13 @@ test('manifest.json is valid, standalone, with maskable + >=2 icons', () => {
   assert.ok(Array.isArray(m.icons) && m.icons.length >= 2, '>=2 icons');
   assert.ok(m.icons.some(i => i.purpose === 'maskable'), 'has a maskable icon');
 });
+
+test('service worker precaches progress module and every study deck', () => {
+  const sw = readFileSync('web/sw.js', 'utf8');
+  assert.match(sw, /js\/progress\.js/);
+  for (const lv of ['n5', 'n4', 'n3', 'n2', 'n1']) {
+    assert.match(sw, new RegExp(`data/${lv}\\.json`));
+    assert.match(sw, new RegExp(`data/grammar_${lv}\\.json`));
+    assert.match(sw, new RegExp(`data/grammar_order_${lv}\\.json`));
+  }
+});

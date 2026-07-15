@@ -4,7 +4,8 @@ import { exchangeSession, pull, push } from './sync.js';
 import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
 import { makeAudio } from './audio.js';
 import { makeBgm, normalizeStyle } from './bgm.js';
-import { renderChrome } from './ui.js';
+import { renderChrome, updateStudyStats } from './ui.js';
+import { isWeakCard, recordActivity } from './progress.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
@@ -15,6 +16,18 @@ import { mountReading } from './modes/reading.js';
 import { WORKER_URL, GOOGLE_CLIENT_ID } from '../config.js';
 
 const state = { ...loadState() };
+const DEVICE_KEY = 'vocabmatch.device';
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = globalThis.crypto?.randomUUID?.() || `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch { return 'local'; }
+}
+const deviceId = getDeviceId();
 let mode = 'match';
 let data = { vocab: {}, grammar: {}, grammar_order: {} };   // data[deck][lv] = [cards]
 // A deck is the data source for the current (content, mode). Grammar's two modes
@@ -29,6 +42,8 @@ const DECK_PREFIX = { vocab: '', grammar: 'grammar_', grammar_order: 'grammar_or
 let pool = [];             // filtered candidate cards
 let queue = [];            // ids to review this session
 let stopFalling = null;
+let practiceKind = null;
+let lastActivityAt = Date.now();
 let audio = makeAudio(state.settings.sound);
 const bgm = makeBgm(state.settings.bgm);
 
@@ -55,6 +70,7 @@ function rebuildPool() {
     .filter(c => state.settings.content !== 'vocab'
       || state.settings.pairMode !== 'reading' || c.word !== c.kana);
   queue = buildQueue(state, pool.map(c => c.id), Date.now());
+  practiceKind = null;
 }
 const byId = id => pool.find(c => c.id === id);
 
@@ -68,8 +84,13 @@ async function persist() {
 }
 let advancePending = false;
 function onResult(id, grade) {
-  Object.assign(state, applyGrade(state, id, grade, Date.now()));
+  const now = Date.now();
+  const seconds = Math.max(1, (now - lastActivityAt) / 1000);
+  lastActivityAt = now;
+  const graded = applyGrade(state, id, grade, now);
+  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, now }));
   persist();
+  updateStudyStats(document.getElementById('chrome'), state, activeData);
   if (mode !== 'falling' && !advancePending) {
     advancePending = true;
     queueMicrotask(() => { advancePending = false; next(); });
@@ -138,15 +159,32 @@ function buildPracticeQueue() {
   }
   return ids;
 }
+function buildWeakQueue() {
+  const ids = pool.map(c => c.id).filter(id => isWeakCard(state.cards[id]));
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
+function startWeakReview() {
+  if (stopFalling) { stopFalling(); stopFalling = null; }
+  const weak = buildWeakQueue();
+  if (!weak.length) return;
+  queue = weak;
+  practiceKind = 'weak';
+  next();
+}
 function renderDone(stage) {
   const empty = pool.length === 0;
+  const weakDone = !empty && practiceKind === 'weak';
   stage.innerHTML = `
     <div class="done">
-      <div class="done-emoji">${empty ? '📚' : '🎉'}</div>
-      <p class="done-msg">${empty ? '這個範圍沒有單字' : '今日到期已複習完'}</p>
+      <div class="done-emoji">${empty ? '📚' : weakDone ? '💪' : '🎉'}</div>
+      <p class="done-msg">${empty ? '這個範圍沒有內容' : weakDone ? '弱點複習完成' : '今日到期已複習完'}</p>
       <p class="done-hint">${empty
         ? '請在上方至少選一個級別（N5–N1），主題「全部」時涵蓋整級。'
-        : '目前範圍今天的到期字與新字都做完了。'}</p>
+        : weakDone ? '這一輪需要加強的內容都練完了。' : '目前範圍今天的到期內容與新內容都做完了。'}</p>
       ${empty ? '' : '<button type="button" id="practice-btn" class="practice-btn">繼續練習（提前複習）</button>'}
     </div>`;
   const btn = stage.querySelector('#practice-btn');
@@ -154,6 +192,7 @@ function renderDone(stage) {
     const q = buildPracticeQueue();
     if (!q.length) { renderDone(stage); return; }
     queue = q;
+    practiceKind = 'practice';
     next();
   };
 }
@@ -164,6 +203,7 @@ async function syncNow(mergeLocal = true) {
   const remote = await pull(WORKER_URL, sess.session);
   const next = applySync(state, remote, mergeLocal);
   state.cards = next.cards; state.settings = next.settings; state.updated = next.updated;
+  state.daily = next.daily || {};
   saveState(state);
   // Adopt path with a failed/empty pull (remote===null) must NOT push — that would
   // clobber the incoming account's real remote data with an empty blob on a blip.
@@ -204,6 +244,7 @@ function renderAll() {
     onLevelsChange: async lv => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.levels = lv; state.updated = Date.now(); await loadLevels(activeDeck(), lv); rebuildPool(); persist(); next(); },
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
     onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); bgm.setStyle(state.settings.bgm); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
+    onWeakReview: () => startWeakReview(),
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),

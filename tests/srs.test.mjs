@@ -10,6 +10,7 @@ test('new card good schedules 1 day', () => {
   assert.equal(c.due, T + DAY);
   assert.equal(c.reps, 1);
   assert.equal(c.isNew, false);
+  assert.equal(c.lastGrade, 'good');
 });
 
 test('new card easy schedules 3 days and raises ease', () => {
