@@ -7,6 +7,7 @@
 - 待審稿（可選）: N1 單字/文法只做了程式驗證，未經對抗式 agent 審稿（因額度上限中止）；想要時補跑 15 個審稿 agent（同 N2 流程）
 - 網頁學習道場: 已完成（web/，單字四模式＋文法兩模式＋閱讀＋SM-2 SRS＋Google 登入同步）。本機試玩：`npm run dev`。
   - 2026-07-15 學習進度改版: 新增今日目標進度條、正確率、連續天數、弱點題數與一鍵弱點複習；活動按裝置彙總，跨裝置合併不重複計數；舊 localStorage/遠端資料自動補預設值。弱點由最近 again/hard、反覆失誤或低 ease 判定。PWA v10 預快取五級全部單字/文法題庫（約 2.6 MB），真正首次安裝即可離線。品牌改為「JLPT 學習道場」，新增 `npm run dev/test/build:data`，專案說明補入 CLAUDE.md。19 個 JS 測試檔＋14 個 Python unit tests＋資料重建驗證全過。
+  - 工程交接: 根目錄 `AGENT.md` 已補上常用指令、架構地圖、資料相容性與驗證規則。學習進度改版在 commit `db8731a`；下一個產品優先序是正式站瀏覽器／雙裝置 smoke test，之後再做首次設定導引與聽力 MVP。
   - 背景音樂（BGM，程式合成、無版權/無檔案、可選樣式）已上線: web/js/bgm.js makeBgm(style)＝Web Audio 即時生成的平緩環境樂（C 大調五聲琶音＋sustained pad＋LFO 呼吸＋feedback delay，音量低、consonant）。BGM_STYLES＝off/空靈(ambient)/lo-fi 慵懶(lofi)/輕快(bright)，同引擎不同參數（filter cutoff/octave/tempo/delay/osc 型別）；設定改成「背景音樂」下拉選單（settings.bgm＝樣式字串，預設 'off'）。normalizeStyle 相容舊 boolean（true→ambient、false→off）。app.js setStyle 切換（一個 AudioContext 重用、換樣式淡出淡入）＋reload 若非 off 則第一次 gesture 才啟動（autoplay 政策）。sw.js CACHE 升 v7。midiToFreq/ARP_NOTES/BGM_STYLES/normalizeStyle 有純函式測試。65/65 測試，Playwright 驗過（4 選項、預設 off 無 context、三樣式皆在同一重用 context 上 running、off↔樣式切換正常、除 GIS 環境噪音外 0 error）。想再調各樣式手感（更慢/更亮…）隨時說。
   - 落下模式（falling.js）: 成對卡下落、點兩張相配消除、3 命落地扣命、成功依耗時記 SRS、漸快、Game Over+再玩一次；發卡用 queue.slice() 快照不動 session 佇列
   - 配對內容切換（settings.pairMode meaning/reading）: 讀音模式＝漢字↔假名讀音、只出漢字詞（word≠kana）、藏讀音；套用配對＋落下＋四選一（quiz 讀音模式：出漢字、四個假名讀音選一，pickDistractors 加 field 參數）
