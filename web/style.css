@@ -854,6 +854,50 @@ button {
 }
 .particle-blank { min-width: 34px; }
 
+/* ---------------------------------------------------------- grammar dictionary */
+
+.dict-wrap { max-width: 680px; margin: 3vh auto 40px; }
+.dict-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.dict-search {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+}
+.dict-search:focus { outline: none; box-shadow: var(--ring); }
+.dict-count { font-size: 12px; color: var(--ink-dim); white-space: nowrap; }
+.dict-entry {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.dict-entry summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+.dict-entry summary::-webkit-details-marker { display: none; }
+.dict-entry[open] summary { border-bottom: 1px solid var(--border); }
+.dict-pattern { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--ink); }
+.dict-meaning { font-size: 13px; color: var(--ink-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dict-lv { font-family: var(--font-mono); font-size: 11px; color: var(--shu); }
+.dict-body { padding: 12px 16px 16px; }
+.dict-row { font-size: 13px; color: var(--ink); margin-bottom: 6px; }
+.dict-row b { color: var(--ink-dim); font-weight: 600; margin-right: 8px; font-size: 12px; }
+.dict-ex { margin: 10px 0; padding-left: 10px; border-left: 2px solid var(--border); }
+.dict-ex-jp { font-size: 15px; line-height: 2; }
+.dict-ex-jp b { color: var(--shu); }
+.dict-ex-jp rt { font-size: .5em; color: var(--ink-dim); }
+.dict-ex-zh { font-size: 12px; color: var(--ink-dim); }
+.dict-practice { margin-top: 8px; font-size: 13px; padding: 8px 16px; }
+
 /* ---------------------------------------------------------- homophone mode */
 
 .opt-word { display: block; font-size: 19px; font-family: var(--font-display); }

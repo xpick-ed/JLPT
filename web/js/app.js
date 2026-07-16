@@ -8,7 +8,8 @@ import { makeCombo, applyAnswer } from './combo.js';
 import { ACHIEVEMENTS, evaluateAchievements, questProgress } from './achievements.js';
 import { mountVocabTest, mergeTests } from './vocab-test.js';
 import { mountExam } from './exam.js';
-import { renderChrome, updateStudyStats, updateComboHud, confetti, showToast } from './ui.js';
+import { renderChrome, updateStudyStats, updateComboHud, confetti, showToast, setCurrentMode } from './ui.js';
+import { mountGrammarDict } from './modes/grammar-dict.js';
 import { isWeakCard, recordActivity, dailySummary } from './progress.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
@@ -165,6 +166,17 @@ function next() {
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();   // stop any listening-mode TTS
   if (state.settings.content === 'reading') return mountReading(stage);
   if (state.settings.content === 'grammar') {
+    if (mode === 'dict') {
+      return mountGrammarDict(stage, pool, (items) => {
+        // Jump from the dictionary into a cloze run over this pattern only.
+        queue = items.map(i => i.id);
+        practiceKind = 'pattern';
+        mode = 'cloze';
+        setCurrentMode('cloze');
+        renderAll();
+        next();
+      });
+    }
     const id = queue.shift();
     if (!id) return renderDone(stage);
     const item = byId(id);

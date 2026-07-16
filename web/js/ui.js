@@ -23,6 +23,7 @@ const MODES_BY_CONTENT = {
   grammar: [
     { id: 'cloze', label: '四選一' },
     { id: 'order', label: '排列重組' },
+    { id: 'dict', label: '字典' },
   ],
   // 特訓: study-focused single-card modes over the vocabulary decks.
   drill: [
@@ -37,6 +38,9 @@ const MODES_BY_CONTENT = {
 let currentMode = 'match';
 let settingsOpen = false;
 let trophyOpen = false;
+
+/** Programmatic mode switch (e.g. dictionary → practice) keeps the tabs in sync. */
+export function setCurrentMode(m) { currentMode = m; }
 
 // Theme toggle cycles system → dark → light → system.
 const THEME_ORDER = ['system', 'dark', 'light'];
