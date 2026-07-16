@@ -28,3 +28,4 @@ assets/fonts/
 
 # Cloudflare Wrangler local build cache
 worker/.wrangler/
+.playwright-mcp/
