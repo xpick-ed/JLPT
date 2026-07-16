@@ -8,8 +8,22 @@ def _pn(p):
     m = re.search(r"_part(\d+)\.json$", p)
     return int(m.group(1)) if m else 0
 
+def load_pitch(path="data/pitch_accents.tsv"):
+    """(word, kana) -> accent number, filtered from kanjium (CC BY-SA)."""
+    acc = {}
+    if not os.path.exists(path):
+        return acc
+    for line in open(path, encoding="utf-8"):
+        if line.startswith("#"):
+            continue
+        parts = line.rstrip("\n").split("\t")
+        if len(parts) == 3 and parts[2].isdigit():
+            acc[(parts[0], parts[1])] = int(parts[2])
+    return acc
+
 def main():
     os.makedirs("web/data", exist_ok=True)
+    pitch = load_pitch()
     seen = set()  # word|kana already emitted at a lower level
     for lv in LEVELS:
         out = []
@@ -21,13 +35,18 @@ def main():
                     if key in seen:
                         continue
                     seen.add(key)
-                    out.append({
+                    card = {
                         "id": hashlib.sha1(key.encode()).hexdigest()[:12],
                         "level": lv.upper(),
                         "category": cat["category"],
                         "word": e["word"], "kana": e["kana"], "romaji": e["romaji"],
                         "pos": e["pos"], "zh": e["zh"], "ex": e["ex"], "ex_zh": e["ex_zh"],
-                    })
+                    }
+                    # IDs hash only word|kana, so this extra field is ID-stable.
+                    a = pitch.get((e["word"], e["kana"]))
+                    if a is not None:
+                        card["acc"] = a
+                    out.append(card)
         json.dump(out, open(f"web/data/{lv}.json", "w", encoding="utf-8"),
                   ensure_ascii=False, separators=(",", ":"))
         print(f"{lv}: {len(out)} cards")

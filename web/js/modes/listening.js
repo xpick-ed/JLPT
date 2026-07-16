@@ -4,6 +4,7 @@
 
 import { pickDistractors } from './quiz.js';
 import { particles, stamp } from '../ui.js';
+import { pitchHtml } from '../pitch.js';
 
 // Prefer a Japanese voice; null just means "let the engine pick by lang".
 export function pickJaVoice(voices) {
@@ -96,7 +97,7 @@ export function mountListening(root, card, pool, onResult, audio, pairMode = 'me
       stamp(b, opt.correct);
       [...box.children].forEach(c => (c.disabled = true));
       reveal.hidden = false;
-      reveal.textContent = `${card.word}（${card.kana}）— ${card.zh}`;
+      reveal.innerHTML = `${card.word}（${pitchHtml(card.kana, card.acc)}）— ${card.zh}`;
       setTimeout(() => { if (ttsAvailable()) speechSynthesis.cancel(); onResult(card.id, grade); }, 1300);
     };
     box.appendChild(b);

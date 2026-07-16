@@ -5,6 +5,7 @@
 import { furiganaToRuby } from '../furigana.js';
 import { speakJa, ttsAvailable } from './listening.js';
 import { speechText } from './dictation.js';
+import { pitchHtml } from '../pitch.js';
 
 export const SPEEDS = [
   { rate: 0.7, label: '0.7x' },
@@ -51,7 +52,7 @@ export function mountShadow(root, pool) {
         </div>
         <div class="shadow-jp${showJp ? '' : ' shadow-hidden'}">${furiganaToRuby(c.ex)}</div>
         <div class="shadow-zh${showZh ? '' : ' shadow-hidden'}">${c.ex_zh || ''}</div>
-        <div class="shadow-word">${c.word}（${c.kana}）— ${c.zh}</div>
+        <div class="shadow-word">${c.word}（${pitchHtml(c.kana, c.acc)}）— ${c.zh}</div>
         <div class="vt-actions">
           <button type="button" class="btn-ghost" id="sh-jp">${showJp ? '隱藏字幕' : '顯示字幕'}</button>
           <button type="button" class="btn-ghost" id="sh-zh">${showZh ? '隱藏中譯' : '顯示中譯'}</button>

@@ -29,6 +29,7 @@ export function gradeQuiz({ correct, elapsedMs }) {
 }
 
 import { particles, stamp } from '../ui.js';
+import { pitchHtml } from '../pitch.js';
 
 /**
  * Mount a single 4-choice quiz card.
@@ -54,7 +55,7 @@ export function mountQuiz(root, card, pool, onResult, audio, pairMode = 'meaning
     <div class="card-wrap quiz-wrap">
       <div class="prompt">
         <span class="jp">${card.word}</span>
-        ${reading ? '' : `<span class="kana">${card.kana}</span>`}
+        ${reading ? '' : `<span class="kana">${pitchHtml(card.kana, card.acc)}</span>`}
       </div>
       <div class="options"></div>
     </div>`;

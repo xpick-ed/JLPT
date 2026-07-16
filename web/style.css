@@ -898,6 +898,13 @@ button {
 .dict-ex-zh { font-size: 12px; color: var(--ink-dim); }
 .dict-practice { margin-top: 8px; font-size: 13px; padding: 8px 16px; }
 
+/* ---------------------------------------------------------- pitch accent */
+
+.pitch { display: inline-flex; align-items: baseline; }
+.mora { padding-top: 3px; border-top: 2px solid transparent; }
+.mora-h { border-top-color: var(--shu); }
+.mora-drop { border-right: 2px solid var(--shu); padding-right: 1px; }
+
 /* ---------------------------------------------------------- conjugation drill */
 
 .conjug-target { font-size: 15px; color: var(--ink-dim); margin-bottom: 16px; }

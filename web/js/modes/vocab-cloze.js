@@ -5,6 +5,7 @@
 import { pickDistractors, gradeQuiz } from './quiz.js';
 import { furiganaToRuby } from '../furigana.js';
 import { particles, stamp } from '../ui.js';
+import { pitchHtml } from '../pitch.js';
 
 /**
  * Locate the target word inside its furigana-annotated example sentence and
@@ -74,7 +75,7 @@ export function mountVocabCloze(root, card, pool, onResult, audio) {
       blank.textContent = answer;
       blank.classList.add('filled');
       reveal.hidden = false;
-      reveal.textContent = `${card.word}（${card.kana}）— ${card.zh}`;
+      reveal.innerHTML = `${card.word}（${pitchHtml(card.kana, card.acc)}）— ${card.zh}`;
       stamp(b, opt.correct);
       [...box.children].forEach(c => (c.disabled = true));
       setTimeout(() => onResult(card.id, grade), 1200);

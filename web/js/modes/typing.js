@@ -1,4 +1,5 @@
 import { stamp } from '../ui.js';
+import { pitchHtml } from '../pitch.js';
 
 export function hasKana(s) {
   return /[぀-ヿ]/.test(s);
@@ -79,11 +80,11 @@ export function mountTyping(root, card, onResult, audio, pb = null, onNewBest = 
       const grade = gradeTyping({ correct: true, hadTypo, elapsedMs, firstTry: attempts === 1, revealed: false });
       card_.classList.add('correct-flash');
       audio.hit();
-      feedback.textContent = `${card.kana}（${card.romaji}）`;
+      feedback.innerHTML = `${pitchHtml(card.kana, card.acc)}（${card.romaji}）`;
       feedback.className = 'type-feedback ok';
       // Race yourself: a clean first-try answer faster than the record sets a new PB.
       if (attempts === 1 && !hadTypo && (!pb || elapsedMs < pb.ms)) {
-        feedback.textContent += `　⚡ 新最速 ${(elapsedMs / 1000).toFixed(1)}s！`;
+        feedback.innerHTML += `　⚡ 新最速 ${(elapsedMs / 1000).toFixed(1)}s！`;
         if (onNewBest) onNewBest(Math.round(elapsedMs));
       }
       finish(grade, true);
