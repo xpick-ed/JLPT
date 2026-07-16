@@ -791,8 +791,31 @@ button {
 .vt-history h3 { font-size: 13px; color: var(--ink-dim); margin: 12px 0 6px; }
 .vt-hrow { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; color: var(--ink-dim); }
 .vt-hrow b { font-family: var(--font-mono); color: var(--ink); }
-.vt-launch { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.vt-launch { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .vt-last { font-size: 12px; color: var(--ink-dim); }
+
+/* ---------------------------------------------------------- mock exam */
+
+.exam-levels { justify-content: center; margin-bottom: 6px; }
+.exam-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.exam-timer { font-family: var(--font-mono); font-size: 15px; color: var(--ink); }
+.exam-timer-low { color: var(--shu); font-weight: 700; }
+.exam-frags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.exam-frag { flex: 0 1 auto; }
+.exam-placed { border-bottom: 2px solid var(--shu); min-width: 40px; display: inline-block; padding: 0 4px; }
+.exam-result .vt-size b { color: var(--shu); }
+.exam-sec { width: auto; min-width: 96px; }
+.exam-wrong { text-align: left; margin-bottom: 10px; }
+.exam-wrong h3 { font-size: 13px; color: var(--ink-dim); margin: 14px 0 8px; }
+.exam-wrow { padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+.exam-wq { color: var(--ink); margin-bottom: 3px; }
+.exam-wa { font-size: 13px; color: var(--ink-dim); }
+.exam-wa b { color: var(--shu); }
 
 /* ---------------------------------------------------------- vocab example cloze */
 

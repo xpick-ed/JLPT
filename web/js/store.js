@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS = { newPerDay: 50, dailyGoal: 50, levels: ['n2'], 
 const KEY = 'vocabmatch.state';
 
 export function emptyState() {
-  return { cards: {}, daily: {}, best: {}, achievements: {}, vocabTests: [], settings: { ...DEFAULT_SETTINGS }, updated: 0 };
+  return { cards: {}, daily: {}, best: {}, achievements: {}, vocabTests: [], exams: [], settings: { ...DEFAULT_SETTINGS }, updated: 0 };
 }
 
 export function mergeStates(a, b) {
@@ -18,7 +18,7 @@ export function mergeStates(a, b) {
   }
   const pickedSettings = (b.updated || 0) > (a.updated || 0) ? b.settings : a.settings;
   const settings = { ...DEFAULT_SETTINGS, ...(pickedSettings || {}) };
-  return { cards, daily: mergeDaily(a.daily, b.daily), best: mergeBest(a.best, b.best), achievements: mergeAchievements(a.achievements, b.achievements), vocabTests: mergeTests(a.vocabTests, b.vocabTests), settings, updated: Math.max(a.updated || 0, b.updated || 0) };
+  return { cards, daily: mergeDaily(a.daily, b.daily), best: mergeBest(a.best, b.best), achievements: mergeAchievements(a.achievements, b.achievements), vocabTests: mergeTests(a.vocabTests, b.vocabTests), exams: mergeTests(a.exams, b.exams), settings, updated: Math.max(a.updated || 0, b.updated || 0) };
 }
 
 // Resolve local vs remote state on sync. mergeLocal=true → merge (same/anonymous
@@ -26,8 +26,8 @@ export function mergeStates(a, b) {
 // never carrying the previous account's cards; empty when there is no remote.
 export function applySync(local, remote, mergeLocal) {
   if (mergeLocal) return remote ? mergeStates(local, remote) : local;
-  if (remote) return { cards: remote.cards || {}, daily: remote.daily || {}, best: remote.best || {}, achievements: remote.achievements || {}, vocabTests: remote.vocabTests || [], settings: { ...DEFAULT_SETTINGS, ...(remote.settings || {}) }, updated: remote.updated || 0 };
-  return { cards: {}, daily: {}, best: {}, achievements: {}, vocabTests: [], settings: { ...DEFAULT_SETTINGS }, updated: 0 };
+  if (remote) return { cards: remote.cards || {}, daily: remote.daily || {}, best: remote.best || {}, achievements: remote.achievements || {}, vocabTests: remote.vocabTests || [], exams: remote.exams || [], settings: { ...DEFAULT_SETTINGS, ...(remote.settings || {}) }, updated: remote.updated || 0 };
+  return { cards: {}, daily: {}, best: {}, achievements: {}, vocabTests: [], exams: [], settings: { ...DEFAULT_SETTINGS }, updated: 0 };
 }
 
 export function loadState() {
@@ -41,6 +41,7 @@ export function loadState() {
     s.best = s.best || {};
     s.achievements = s.achievements || {};
     s.vocabTests = s.vocabTests || [];
+    s.exams = s.exams || [];
     return s;
   } catch { return emptyState(); }
 }

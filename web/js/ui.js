@@ -312,6 +312,13 @@ export function renderChrome(root, state, getData, handlers) {
               return `<span class="vt-last">上次 ${new Date(last.at).toLocaleDateString()}：約 ${last.size} 詞</span>`;
             })() : '<span class="vt-last">測測你目前的詞彙量</span>'}
           </div>
+          <div class="vt-launch">
+            <button type="button" class="btn-ghost mock-exam-btn">📝 模擬考</button>
+            ${(state.exams || []).length ? (() => {
+              const last = state.exams[state.exams.length - 1];
+              return `<span class="vt-last">上次 ${new Date(last.at).toLocaleDateString()}：${(last.level || '').toUpperCase()} ${last.pct} 分</span>`;
+            })() : '<span class="vt-last">計時混合卷，考前實戰演練</span>'}
+          </div>
           <h2>成就徽章</h2>
           <div class="badge-grid">
             ${ACHIEVEMENTS.map(a => {
@@ -407,6 +414,12 @@ export function renderChrome(root, state, getData, handlers) {
       trophyOpen = false;
       render();
       if (handlers.onVocabTest) handlers.onVocabTest();
+    });
+    const examBtn = root.querySelector('.mock-exam-btn');
+    if (examBtn) examBtn.addEventListener('click', () => {
+      trophyOpen = false;
+      render();
+      if (handlers.onMockExam) handlers.onMockExam();
     });
 
     root.querySelector('.theme-btn').addEventListener('click', () => {

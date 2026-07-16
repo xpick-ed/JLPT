@@ -7,6 +7,7 @@ import { makeBgm, normalizeStyle } from './bgm.js';
 import { makeCombo, applyAnswer } from './combo.js';
 import { ACHIEVEMENTS, evaluateAchievements, questProgress } from './achievements.js';
 import { mountVocabTest, mergeTests } from './vocab-test.js';
+import { mountExam } from './exam.js';
 import { renderChrome, updateStudyStats, updateComboHud, confetti, showToast } from './ui.js';
 import { isWeakCard, recordActivity, dailySummary } from './progress.js';
 import { mountMatch } from './modes/match.js';
@@ -255,6 +256,30 @@ async function startVocabTest() {
   );
 }
 
+function startMockExam() {
+  if (stopFalling) { stopFalling(); stopFalling = null; }
+  const levels = ['n5', 'n4', 'n3', 'n2', 'n1'];
+  const selected = state.settings.levels;
+  const defaultLevel = levels.filter(lv => selected.includes(lv)).pop() || 'n3';
+  mountExam(document.getElementById('stage'), {
+    levels,
+    defaultLevel,
+    loadDecks: async (lv) => {
+      await loadLevels('vocab', [lv]);
+      await loadLevels('grammar', [lv]);
+      await loadLevels('grammar_order', [lv]);
+      return { vocab: data.vocab[lv], cloze: data.grammar[lv], order: data.grammar_order[lv] };
+    },
+    history: state.exams || [],
+    onDone: (record) => {
+      state.exams = mergeTests(state.exams, [record]);
+      state.updated = Date.now();
+      persist();
+    },
+    onExit: () => { rebuildPool(); renderAll(); next(); },
+  });
+}
+
 function renderDone(stage) {
   const empty = pool.length === 0;
   const weakDone = !empty && practiceKind === 'weak';
@@ -326,6 +351,7 @@ function renderAll() {
     onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); bgm.setStyle(state.settings.bgm); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
     onWeakReview: () => startWeakReview(),
     onVocabTest: () => startVocabTest(),
+    onMockExam: () => startMockExam(),
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),
