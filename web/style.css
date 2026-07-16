@@ -776,6 +776,24 @@ button {
 
 .type-row { margin-bottom: 10px; }
 
+/* ---------------------------------------------------------- vocab size test */
+
+.vt-title { margin: 0 0 10px; font-size: 20px; }
+.vt-desc { color: var(--ink-dim); font-size: 14px; line-height: 1.7; margin: 0 0 20px; }
+.vt-actions { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+.vt-progress { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); margin-bottom: 12px; }
+.vt-skip { margin-top: 14px; font-size: 13px; color: var(--ink-dim); }
+.vt-skip:hover { color: var(--ink); }
+.vt-size { font-size: 34px; margin: 6px 0 2px; }
+.vt-size b { font-family: var(--font-mono); color: var(--shu); }
+.vt-reco { color: var(--ink-dim); font-size: 14px; margin-bottom: 16px; }
+.vt-rates { text-align: left; margin-bottom: 14px; }
+.vt-history h3 { font-size: 13px; color: var(--ink-dim); margin: 12px 0 6px; }
+.vt-hrow { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; color: var(--ink-dim); }
+.vt-hrow b { font-family: var(--font-mono); color: var(--ink); }
+.vt-launch { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.vt-last { font-size: 12px; color: var(--ink-dim); }
+
 /* ---------------------------------------------------------- vocab example cloze */
 
 .excloze-wrap .cloze-sentence { margin-bottom: 10px; }

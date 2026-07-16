@@ -6,6 +6,7 @@ import { makeAudio } from './audio.js';
 import { makeBgm, normalizeStyle } from './bgm.js';
 import { makeCombo, applyAnswer } from './combo.js';
 import { ACHIEVEMENTS, evaluateAchievements, questProgress } from './achievements.js';
+import { mountVocabTest, mergeTests } from './vocab-test.js';
 import { renderChrome, updateStudyStats, updateComboHud, confetti, showToast } from './ui.js';
 import { isWeakCard, recordActivity, dailySummary } from './progress.js';
 import { mountMatch } from './modes/match.js';
@@ -238,6 +239,22 @@ function startWeakReview() {
   practiceKind = 'weak';
   next();
 }
+async function startVocabTest() {
+  if (stopFalling) { stopFalling(); stopFalling = null; }
+  await loadLevels('vocab', ['n5', 'n4', 'n3', 'n2', 'n1']);
+  mountVocabTest(
+    document.getElementById('stage'),
+    data.vocab,
+    state.vocabTests || [],
+    (record) => {
+      state.vocabTests = mergeTests(state.vocabTests, [record]);
+      state.updated = Date.now();
+      persist();
+    },
+    () => { rebuildPool(); renderAll(); next(); },
+  );
+}
+
 function renderDone(stage) {
   const empty = pool.length === 0;
   const weakDone = !empty && practiceKind === 'weak';
@@ -308,6 +325,7 @@ function renderAll() {
     onCategoriesChange: c => { if (stopFalling) { stopFalling(); stopFalling = null; } state.settings.categories = c; state.updated = Date.now(); rebuildPool(); persist(); next(); },
     onSettingsChange: s => { if (stopFalling) { stopFalling(); stopFalling = null; } Object.assign(state.settings, s); state.updated = Date.now(); audio.setEnabled(state.settings.sound); bgm.setStyle(state.settings.bgm); applyTheme(state.settings.theme); rebuildPool(); persist(); renderAll(); next(); },
     onWeakReview: () => startWeakReview(),
+    onVocabTest: () => startVocabTest(),
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),

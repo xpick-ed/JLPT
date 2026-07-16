@@ -305,6 +305,13 @@ export function renderChrome(root, state, getData, handlers) {
           <div class="quest-list">${questItemsHtml(state)}</div>
           <h2>學習統計</h2>
           <div class="stats-block">${statsHtml(state, dataByLevel)}</div>
+          <div class="vt-launch">
+            <button type="button" class="btn-ghost vocab-test-btn">📏 詞彙量檢定</button>
+            ${(state.vocabTests || []).length ? (() => {
+              const last = state.vocabTests[state.vocabTests.length - 1];
+              return `<span class="vt-last">上次 ${new Date(last.at).toLocaleDateString()}：約 ${last.size} 詞</span>`;
+            })() : '<span class="vt-last">測測你目前的詞彙量</span>'}
+          </div>
           <h2>成就徽章</h2>
           <div class="badge-grid">
             ${ACHIEVEMENTS.map(a => {
@@ -394,6 +401,12 @@ export function renderChrome(root, state, getData, handlers) {
     if (trophyClose) trophyClose.addEventListener('click', () => {
       trophyOpen = false;
       render();
+    });
+    const vtBtn = root.querySelector('.vocab-test-btn');
+    if (vtBtn) vtBtn.addEventListener('click', () => {
+      trophyOpen = false;
+      render();
+      if (handlers.onVocabTest) handlers.onVocabTest();
     });
 
     root.querySelector('.theme-btn').addEventListener('click', () => {
