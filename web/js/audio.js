@@ -24,6 +24,8 @@ export function makeAudio(enabled) {
   }
   const seq = (freqs, gap, opts) => freqs.forEach((f, i) => note(f, now() + i * gap, opts));
   const chord = (freqs, opts) => { const t = now(); freqs.forEach(f => note(f, t, opts)); };
+  // Global-streak pitch lift: up to +half an octave at combo 12.
+  const lift = (combo) => 2 ** (Math.min(combo || 0, 12) / 24);
 
   // Per-mode palette. correct(combo) plays on a right answer, wrong() on a
   // mistake, clear() when a whole board is cleared (only match uses clear()).
@@ -36,13 +38,13 @@ export function makeAudio(enabled) {
     },
     // 打字: typewriter tick then a soft confirm ding.
     typing: {
-      correct: () => { note(1250, now(), { type: 'square', dur: 0.025, gain: 0.05 }); note(880, now() + 0.03, { type: 'sine', dur: 0.11, gain: 0.13 }); },
+      correct: (combo) => { note(1250, now(), { type: 'square', dur: 0.025, gain: 0.05 }); note(880 * lift(combo), now() + 0.03, { type: 'sine', dur: 0.11, gain: 0.13 }); },
       wrong:   () => note(150, now(), { type: 'sawtooth', dur: 0.13, gain: 0.10 }),
       clear:   () => seq([660, 880], 0.07, { type: 'sine', dur: 0.12, gain: 0.12 }),
     },
     // 四選一: game-show rising two-tone "correct"; descending buzz on wrong.
     quiz: {
-      correct: () => { note(660, now(), { type: 'sine', dur: 0.10, gain: 0.14 }); note(990, now() + 0.10, { type: 'sine', dur: 0.17, gain: 0.14 }); },
+      correct: (combo) => { const k = lift(combo); note(660 * k, now(), { type: 'sine', dur: 0.10, gain: 0.14 }); note(990 * k, now() + 0.10, { type: 'sine', dur: 0.17, gain: 0.14 }); },
       wrong:   () => note(320, now(), { type: 'sawtooth', dur: 0.18, gain: 0.12, glideTo: 175 }),
       clear:   () => seq([784, 988, 1319], 0.08, { type: 'sine', dur: 0.13, gain: 0.12 }),
     },
@@ -54,13 +56,13 @@ export function makeAudio(enabled) {
     },
     // 文法四選一: warm woody marimba confirm; muted low on wrong.
     cloze: {
-      correct: () => { note(587, now(), { type: 'triangle', dur: 0.14, gain: 0.14 }); note(1175, now() + 0.02, { type: 'sine', dur: 0.09, gain: 0.05 }); },
+      correct: (combo) => { const k = lift(combo); note(587 * k, now(), { type: 'triangle', dur: 0.14, gain: 0.14 }); note(1175 * k, now() + 0.02, { type: 'sine', dur: 0.09, gain: 0.05 }); },
       wrong:   () => note(185, now(), { type: 'sine', dur: 0.17, gain: 0.10, glideTo: 140 }),
       clear:   () => seq([587, 740, 880], 0.08, { type: 'triangle', dur: 0.13, gain: 0.13 }),
     },
     // 排列重組: a satisfying resolved chord when the sentence completes.
     order: {
-      correct: () => chord([523, 659, 784], { type: 'triangle', dur: 0.24, gain: 0.09 }),
+      correct: (combo) => chord([523, 659, 784].map(f => f * lift(combo)), { type: 'triangle', dur: 0.24, gain: 0.09 }),
       wrong:   () => note(196, now(), { type: 'sine', dur: 0.17, gain: 0.10, glideTo: 150 }),
       clear:   () => seq([523, 659, 784, 1047], 0.07, { type: 'triangle', dur: 0.14, gain: 0.12 }),
     },

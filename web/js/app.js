@@ -4,7 +4,8 @@ import { exchangeSession, pull, push } from './sync.js';
 import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
 import { makeAudio } from './audio.js';
 import { makeBgm, normalizeStyle } from './bgm.js';
-import { renderChrome, updateStudyStats } from './ui.js';
+import { makeCombo, applyAnswer } from './combo.js';
+import { renderChrome, updateStudyStats, updateComboHud, confetti } from './ui.js';
 import { isWeakCard, recordActivity } from './progress.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
@@ -47,6 +48,19 @@ let lastActivityAt = Date.now();
 let audio = makeAudio(state.settings.sound);
 const bgm = makeBgm(state.settings.bgm);
 
+// Session-wide combo across every mode; all-time best persists in state.best.
+let comboState = { ...makeCombo(), best: state.best?.combo || 0 };
+let recordCelebrated = false;   // celebrate once per streak run, not every answer beyond the old best
+// Modes play their own SFX; this wrapper lets the global streak raise the
+// pitch floor everywhere (match/falling still pass their local combo).
+const gameAudio = {
+  hit: (c = 0) => audio.hit(Math.max(c, comboState.combo + 1)),
+  wrong: () => audio.wrong(),
+  clear: () => audio.clear(),
+  setMode: m => audio.setMode(m),
+  setEnabled: b => audio.setEnabled(b),
+};
+
 // 'system' follows prefers-color-scheme (no attribute); 'dark'/'light' force it.
 function applyTheme(theme) {
   const root = document.documentElement;
@@ -88,9 +102,17 @@ function onResult(id, grade) {
   const seconds = Math.max(1, (now - lastActivityAt) / 1000);
   lastActivityAt = now;
   const graded = applyGrade(state, id, grade, now);
-  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, now }));
+  const correct = grade !== 'again';
+  comboState = applyAnswer(comboState, correct);
+  if (!correct) recordCelebrated = false;
+  const newRecord = correct && !recordCelebrated && comboState.combo > (graded.best?.combo || 0) && comboState.combo >= 5;
+  if (newRecord) recordCelebrated = true;
+  if (comboState.combo > (graded.best?.combo || 0)) graded.best = { ...(graded.best || {}), combo: comboState.combo, updated: now };
+  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, points: comboState.gained, now }));
   persist();
   updateStudyStats(document.getElementById('chrome'), state, activeData);
+  updateComboHud(comboState, { newRecord });
+  if (newRecord) confetti(document.getElementById('stage'));
   if (mode !== 'falling' && !advancePending) {
     advancePending = true;
     queueMicrotask(() => { advancePending = false; next(); });
@@ -106,19 +128,19 @@ function next() {
     const item = byId(id);
     if (!item) return renderDone(stage);
     return mode === 'order'
-      ? mountGrammarOrder(stage, item, pool, onResult, audio)
-      : mountGrammarCloze(stage, item, pool, onResult, audio);
+      ? mountGrammarOrder(stage, item, pool, onResult, gameAudio)
+      : mountGrammarCloze(stage, item, pool, onResult, gameAudio);
   }
   if (mode === 'falling') return startFalling();
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
     if (six.length < 1) return renderDone(stage);
-    mountMatch(stage, six, onResult, audio, state.settings.pairMode);
+    mountMatch(stage, six, onResult, gameAudio, state.settings.pairMode);
   } else {
     const id = queue.shift();
     if (!id) return renderDone(stage);
     const card = byId(id);
-    mode === 'typing' ? mountTyping(stage, card, onResult, audio) : mountQuiz(stage, card, pool, onResult, audio, state.settings.pairMode);
+    mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio) : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }
 function makeFallingSupply() {
@@ -134,7 +156,7 @@ function startFalling() {
   if (stopFalling) { stopFalling(); stopFalling = null; }
   const stage = document.getElementById('stage');
   if (pool.length === 0) return renderDone(stage);
-  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, audio, onGameOver, state.settings.pairMode);
+  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, gameAudio, onGameOver, state.settings.pairMode);
 }
 function onGameOver({ score, maxCombo }) {
   if (stopFalling) { stopFalling(); stopFalling = null; }

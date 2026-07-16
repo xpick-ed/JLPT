@@ -95,6 +95,28 @@ export function confetti(root) {
   }
 }
 
+/** Fixed HUD for the global cross-mode streak; appears from 2 in a row. */
+export function updateComboHud(c, { newRecord = false } = {}) {
+  const hud = document.getElementById('combo-hud');
+  if (!hud) return;
+  if (c.combo < 2) {
+    hud.hidden = true;
+    hud.classList.remove('combo-hud-hot', 'combo-hud-record');
+    return;
+  }
+  hud.hidden = false;
+  hud.innerHTML = `
+    <span class="combo-hud-n">${c.combo}</span><span class="combo-hud-label">連擊</span>
+    ${c.multiplier > 1 ? `<span class="combo-hud-x">×${c.multiplier}</span>` : ''}
+    ${c.gained ? `<span class="combo-hud-gain">+${c.gained}</span>` : ''}
+    ${newRecord ? '<span class="combo-hud-newbest">新紀錄！</span>' : ''}`;
+  hud.classList.toggle('combo-hud-hot', c.combo >= 10);
+  hud.classList.toggle('combo-hud-record', newRecord);
+  hud.classList.remove('combo-hud-pop');
+  void hud.offsetWidth;                      // restart the pop animation
+  hud.classList.add('combo-hud-pop');
+}
+
 function categoriesFor(state, dataByLevel) {
   const seen = new Set();
   const cats = [];
@@ -139,6 +161,7 @@ export function updateStudyStats(root, state, getData) {
   setText(root, '[data-stat="reviewed"]', today.reviewed);
   setText(root, '[data-stat="goal"]', goal);
   setText(root, '[data-stat="accuracy"]', `${accuracy}%`);
+  setText(root, '[data-stat="score"]', today.score || 0);
   setText(root, '[data-stat="streak"]', streak);
   setText(root, '[data-stat="weak"]', weak);
   const bar = root.querySelector('.today-progress-fill');
@@ -199,6 +222,7 @@ export function renderChrome(root, state, getData, handlers) {
           </div>
           <div class="today-metrics" aria-label="今日學習摘要">
             <span>正確率 <b data-stat="accuracy">${accuracy}%</b></span>
+            <span>分數 <b data-stat="score">${today.score || 0}</b></span>
             <span>連續 <b data-stat="streak">${streak}</b> 天</span>
           </div>
         </div>

@@ -1045,6 +1045,41 @@ button {
   pointer-events: none;
 }
 
+/* ---------------------------------------------------------- combo HUD (global streak) */
+
+#combo-hud {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  z-index: 60;
+  pointer-events: none;
+}
+#combo-hud[hidden] { display: none; }
+#combo-hud.combo-hud-pop { animation: comboPop .28s cubic-bezier(.2, 1.6, .4, 1); }
+.combo-hud-n { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--ink); }
+.combo-hud-label { font-size: 12px; color: var(--ink-dim); }
+.combo-hud-x { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--kin); }
+.combo-hud-gain { font-family: var(--font-mono); font-size: 13px; color: var(--shu); animation: gainFloat .8s ease-out forwards; }
+.combo-hud-newbest { font-size: 12px; font-weight: 700; color: var(--shu); }
+#combo-hud.combo-hud-hot { background: var(--shu); border-color: var(--shu); }
+#combo-hud.combo-hud-hot .combo-hud-n,
+#combo-hud.combo-hud-hot .combo-hud-label,
+#combo-hud.combo-hud-hot .combo-hud-x,
+#combo-hud.combo-hud-hot .combo-hud-gain,
+#combo-hud.combo-hud-hot .combo-hud-newbest { color: var(--shu-ink); }
+#combo-hud.combo-hud-record { animation: recordFlash .9s ease-out; }
+
 /* ---------------------------------------------------------- keyframes */
 
 @keyframes dealIn {
@@ -1104,6 +1139,14 @@ button {
   0%   { transform: scale(1); }
   45%  { transform: scale(1.35) rotate(-4deg); }
   100% { transform: scale(0.6) rotate(4deg); }
+}
+@keyframes gainFloat {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-14px); }
+}
+@keyframes recordFlash {
+  0%, 100% { box-shadow: var(--shadow-lg); }
+  30%      { box-shadow: 0 0 0 6px var(--shu-glow), var(--shadow-lg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
