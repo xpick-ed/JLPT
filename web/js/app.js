@@ -16,6 +16,7 @@ import { mountQuiz } from './modes/quiz.js';
 import { mountListening } from './modes/listening.js';
 import { mountVocabCloze, makeCloze } from './modes/vocab-cloze.js';
 import { mountParticle, makeParticleCloze } from './modes/particle.js';
+import { mountHomophone, homophonesOf } from './modes/homophone.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -191,6 +192,7 @@ function next() {
       // (reworded examples, no particle after a noun) get the plain quiz instead.
       : mode === 'excloze' && makeCloze(card) ? mountVocabCloze(stage, card, pool, onResult, gameAudio)
       : mode === 'particle' && makeParticleCloze(card) ? mountParticle(stage, card, onResult, gameAudio)
+      : mode === 'homophone' && homophonesOf(card, pool).length ? mountHomophone(stage, card, pool, onResult, gameAudio)
       : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }

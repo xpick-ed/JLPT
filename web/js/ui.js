@@ -28,6 +28,7 @@ const MODES_BY_CONTENT = {
   drill: [
     { id: 'excloze', label: '例句' },
     { id: 'particle', label: '助詞' },
+    { id: 'homophone', label: '同音' },
     { id: 'listen', label: '聽力' },
   ],
   reading: [],

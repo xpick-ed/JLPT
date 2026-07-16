@@ -854,6 +854,11 @@ button {
 }
 .particle-blank { min-width: 34px; }
 
+/* ---------------------------------------------------------- homophone mode */
+
+.opt-word { display: block; font-size: 19px; font-family: var(--font-display); }
+.opt-zh { display: block; font-size: 12px; color: var(--ink-dim); margin-top: 3px; }
+
 /* ---------------------------------------------------------- listening mode */
 
 .listen-wrap .prompt { align-items: center; }
