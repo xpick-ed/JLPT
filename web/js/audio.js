@@ -72,6 +72,12 @@ export function makeAudio(enabled) {
       wrong:   () => note(190, now(), { type: 'sine', dur: 0.17, gain: 0.10, glideTo: 145 }),
       clear:   () => seq([587, 740, 880], 0.08, { type: 'sine', dur: 0.12, gain: 0.12 }),
     },
+    // 變位: mechanical click-clack confirm, like gears meshing.
+    conjug: {
+      correct: (combo) => { const k = lift(combo); note(740 * k, now(), { type: 'square', dur: 0.04, gain: 0.05 }); note(988 * k, now() + 0.05, { type: 'triangle', dur: 0.12, gain: 0.13 }); },
+      wrong:   () => note(165, now(), { type: 'sawtooth', dur: 0.12, gain: 0.09 }),
+      clear:   () => seq([740, 880, 1109], 0.07, { type: 'triangle', dur: 0.12, gain: 0.12 }),
+    },
     // 聽寫: sentence assembled — rising three-note resolve.
     dictation: {
       correct: (combo) => { const k = lift(combo); seq([523 * k, 659 * k, 784 * k], 0.06, { type: 'sine', dur: 0.11, gain: 0.12 }); },
@@ -111,4 +117,4 @@ export function makeAudio(enabled) {
 
 // The modes that have a distinct SFX voice (reading has none). Exported so a
 // test can assert every playable mode is covered.
-export const VOICE_IDS = ['match', 'typing', 'quiz', 'excloze', 'particle', 'homophone', 'listen', 'dictation', 'falling', 'cloze', 'order'];
+export const VOICE_IDS = ['match', 'typing', 'quiz', 'excloze', 'particle', 'homophone', 'listen', 'dictation', 'conjug', 'falling', 'cloze', 'order'];

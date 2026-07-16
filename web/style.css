@@ -898,6 +898,11 @@ button {
 .dict-ex-zh { font-size: 12px; color: var(--ink-dim); }
 .dict-practice { margin-top: 8px; font-size: 13px; padding: 8px 16px; }
 
+/* ---------------------------------------------------------- conjugation drill */
+
+.conjug-target { font-size: 15px; color: var(--ink-dim); margin-bottom: 16px; }
+.conjug-target b { color: var(--shu); font-size: 17px; }
+
 /* ---------------------------------------------------------- dictation + shadowing */
 
 .dictation-wrap .exam-order-line { min-height: 44px; }

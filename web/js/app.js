@@ -20,6 +20,8 @@ import { mountParticle, makeParticleCloze } from './modes/particle.js';
 import { mountHomophone, homophonesOf } from './modes/homophone.js';
 import { mountDictation, chunkSentence } from './modes/dictation.js';
 import { mountShadow } from './modes/shadow.js';
+import { mountConjug } from './modes/conjug.js';
+import { isConjugatable } from './conjugate.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -95,6 +97,8 @@ function rebuildPool() {
     // reading mode (vocab only) pairs kanji ↔ kana, so only kanji words (word≠kana)
     .filter(c => state.settings.content !== 'vocab'
       || state.settings.pairMode !== 'reading' || c.word !== c.kana);
+  // 變位 drills verbs only — a mostly-noun queue would just fall back to quiz.
+  if (state.settings.content === 'drill' && mode === 'conjug') pool = pool.filter(isConjugatable);
   queue = buildQueue(state, pool.map(c => c.id), Date.now());
   practiceKind = null;
 }
@@ -209,6 +213,7 @@ function next() {
       : mode === 'particle' && makeParticleCloze(card) ? mountParticle(stage, card, onResult, gameAudio)
       : mode === 'homophone' && homophonesOf(card, pool).length ? mountHomophone(stage, card, pool, onResult, gameAudio)
       : mode === 'dictation' && chunkSentence(card.ex) ? mountDictation(stage, card, onResult, gameAudio)
+      : mode === 'conjug' && isConjugatable(card) ? mountConjug(stage, card, onResult, gameAudio)
       : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }
