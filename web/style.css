@@ -838,6 +838,22 @@ button {
 .excloze-zh { font-size: 13px; color: var(--ink-dim); margin-bottom: 16px; }
 .excloze-wrap .listen-reveal { margin-top: 2px; }
 
+/* ---------------------------------------------------------- particle cloze */
+
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.opt-particle {
+  flex: 0 0 auto;
+  min-width: 64px;
+  font-size: 18px;
+  font-family: var(--font-display);
+}
+.particle-blank { min-width: 34px; }
+
 /* ---------------------------------------------------------- listening mode */
 
 .listen-wrap .prompt { align-items: center; }

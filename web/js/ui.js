@@ -10,6 +10,7 @@ const LEVELS = ['n5', 'n4', 'n3', 'n2', 'n1'];
 const CONTENTS = [
   { id: 'vocab', label: '單字' },
   { id: 'grammar', label: '文法' },
+  { id: 'drill', label: '特訓' },
   { id: 'reading', label: '閱讀' },
 ];
 const MODES_BY_CONTENT = {
@@ -17,13 +18,17 @@ const MODES_BY_CONTENT = {
     { id: 'match', label: '配對' },
     { id: 'typing', label: '打字' },
     { id: 'quiz', label: '四選一' },
-    { id: 'excloze', label: '例句' },
-    { id: 'listen', label: '聽力' },
     { id: 'falling', label: '落下' },
   ],
   grammar: [
     { id: 'cloze', label: '四選一' },
     { id: 'order', label: '排列重組' },
+  ],
+  // 特訓: study-focused single-card modes over the vocabulary decks.
+  drill: [
+    { id: 'excloze', label: '例句' },
+    { id: 'particle', label: '助詞' },
+    { id: 'listen', label: '聽力' },
   ],
   reading: [],
 };

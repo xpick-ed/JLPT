@@ -15,6 +15,7 @@ import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
 import { mountListening } from './modes/listening.js';
 import { mountVocabCloze, makeCloze } from './modes/vocab-cloze.js';
+import { mountParticle, makeParticleCloze } from './modes/particle.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -38,10 +39,12 @@ let mode = 'match';
 let data = { vocab: {}, grammar: {}, grammar_order: {} };   // data[deck][lv] = [cards]
 // A deck is the data source for the current (content, mode). Grammar's two modes
 // read different files, so the source is keyed by deck, not just content.
+// 特訓 (drill) modes all study the vocabulary decks.
 function deckFor(content, m) {
   if (content !== 'grammar') return 'vocab';
   return m === 'order' ? 'grammar_order' : 'grammar';
 }
+const DEFAULT_MODE = { vocab: 'match', grammar: 'cloze', drill: 'excloze', reading: 'match' };
 const activeDeck = () => deckFor(state.settings.content, mode);
 const activeData = () => data[activeDeck()];
 const DECK_PREFIX = { vocab: '', grammar: 'grammar_', grammar_order: 'grammar_order_' };
@@ -184,9 +187,10 @@ function next() {
         persist();
       })
       : mode === 'listen' ? mountListening(stage, card, pool, onResult, gameAudio, state.settings.pairMode)
-      // 例句挖空 needs the word locatable in its example; ~5–10% of cards
-      // aren't (reworded examples) — those get the plain quiz instead.
+      // 例句挖空/助詞 need a usable example sentence; cards without one
+      // (reworded examples, no particle after a noun) get the plain quiz instead.
       : mode === 'excloze' && makeCloze(card) ? mountVocabCloze(stage, card, pool, onResult, gameAudio)
+      : mode === 'particle' && makeParticleCloze(card) ? mountParticle(stage, card, onResult, gameAudio)
       : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }
@@ -337,7 +341,7 @@ async function onCredential(credential) {
   setSession(res);
   await syncNow(mergeLocal);
   setOwner(res.email);
-  mode = state.settings.content === 'grammar' ? 'cloze' : 'match';
+  mode = DEFAULT_MODE[state.settings.content] || 'match';
   if (state.settings.content !== 'reading') { await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); }
   renderAll();
   next();
@@ -356,7 +360,7 @@ function renderAll() {
     onContentChange: async c => {
       if (stopFalling) { stopFalling(); stopFalling = null; }
       state.settings.content = c;
-      mode = c === 'grammar' ? 'cloze' : 'match';
+      mode = DEFAULT_MODE[c] || 'match';
       state.updated = Date.now();
       if (c !== 'reading') { await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); }
       persist(); next();
@@ -389,7 +393,7 @@ addEventListener('pagehide', () => {
 (async function boot() {
   initGoogle(GOOGLE_CLIENT_ID, onCredential);   // non-blocking; sets up the sign-in callback
   if (WORKER_URL && getSession()) await syncNow();
-  if (state.settings.content === 'grammar') mode = 'cloze';
+  mode = DEFAULT_MODE[state.settings.content] || 'match';
   if (state.settings.content !== 'reading') {
     await loadLevels(activeDeck(), state.settings.levels);
     rebuildPool();
