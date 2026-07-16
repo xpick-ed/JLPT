@@ -708,6 +708,20 @@ button {
 .fall-tile.fall-power .ft-text { font-size: 22px; }
 .fall-fx { font-size: 15px; min-width: 40px; }
 
+.fall-ghost { font-size: 13px; color: var(--ink-dim); }
+.fall-ghost[hidden] { display: none; }
+.fall-ghost b { font-family: var(--font-mono); color: var(--ink-dim); margin-left: 2px; }
+.fall-ghost.ghost-behind b { color: var(--shu); }
+
+.type-pb {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--ink-dim);
+}
+
 .ft-text {
   display: inline-block;
   font-family: var(--font-display);
@@ -758,6 +772,7 @@ button {
 /* ---------------------------------------------------------- typing & quiz cards */
 
 .card-wrap {
+  position: relative;
   max-width: 480px;
   margin: 6vh auto 0;
   background: var(--surface);

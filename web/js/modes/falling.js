@@ -1,5 +1,7 @@
 // Falling-match mode. Pure helpers first; mountFalling (the rAF engine) below.
 
+import { ghostScoreAt } from '../ghost.js';
+
 export function gradeFalling(elapsedMs) {
   if (elapsedMs < 2500) return 'easy';
   if (elapsedMs < 6000) return 'good';
@@ -52,7 +54,7 @@ function shuffle(a) {
  * Match two live tiles with the same pairId + different type to clear the pair;
  * a tile reaching the floor purges its whole pair and costs one life.
  */
-export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode = 'meaning') {
+export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode = 'meaning', ghost = null) {
   root.classList.add('falling-mode');
   root.innerHTML = `
     <div class="fall-hud">
@@ -60,6 +62,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
       <span class="fall-score">分數 <b>0</b></span>
       <span class="fall-combo" hidden>連擊 <b>0</b></span>
       <span class="fall-fx"></span>
+      <span class="fall-ghost"${ghost && ghost.samples ? '' : ' hidden'}>👻 <b>0</b></span>
     </div>
     <div class="fall-field"></div>
     <div class="fall-floor"></div>`;
@@ -69,9 +72,14 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
   const comboWrap = root.querySelector('.fall-combo');
   const comboEl = root.querySelector('.fall-combo b');
   const fxEl = root.querySelector('.fall-fx');
+  const ghostEl = root.querySelector('.fall-ghost');
+  const ghostB = root.querySelector('.fall-ghost b');
 
   let lives = LIVES, score = 0, combo = 0, maxCombo = 0, cleared = 0;
   let pendingPower = null, slowUntil = 0, doubleUntil = 0;
+  const runStart = performance.now();
+  const samples = [[0, 0]];                 // [elapsedMs, score] — this run's ghost tape
+  const sample = () => samples.push([Math.round(performance.now() - runStart), score]);
   let tiles = [];            // live: { el, pairId, type, spawnedAt }
   let buffer = [];           // pending specs: { pairId, type, html }
   const firstSpawn = new Map(); // pairId -> earliest spawn time (for grading)
@@ -182,6 +190,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     onResult(pairId, gradeFalling(now - (start ?? now)));
     combo += 1; maxCombo = Math.max(maxCombo, combo);
     score += 10 * combo * (now < doubleUntil ? 2 : 1); cleared += 1;
+    sample();
     if (shouldDropPower(combo)) pendingPower = pickPowerUp();
     audio.hit(combo);
     for (const t of tiles.filter(t => t.pairId === pairId)) removeTile(t, 'fall-clear');
@@ -205,6 +214,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
         firstSpawn.delete(t.pairId);
         score += 5;
       }
+      sample();
       selected = null;
     }
     audio.clear();
@@ -252,6 +262,11 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
       }
     }
     fxEl.textContent = `${slowed ? '⏳' : ''}${now < doubleUntil ? '✨' : ''}`;
+    if (ghost && ghost.samples) {           // race line: the PB run's score at this moment
+      const gs = ghostScoreAt(ghost.samples, now - runStart);
+      ghostB.textContent = String(gs);
+      ghostEl.classList.toggle('ghost-behind', score < gs);
+    }
     raf = requestAnimationFrame(frame);
   }
 
@@ -259,7 +274,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     if (!running) return;
     running = false;
     cancelAnimationFrame(raf);
-    onGameOver({ score, maxCombo });
+    onGameOver({ score, maxCombo, samples, durationMs: performance.now() - runStart });
   }
   function stop() {
     running = false;

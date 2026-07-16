@@ -31,8 +31,9 @@ export function gradeTyping({ correct, hadTypo, elapsedMs, firstTry, revealed })
  * card: {id, word, kana, romaji, zh, ...}
  * onResult(id, grade)
  * audio: {hit(combo), wrong(), clear()}
+ * pb: {ms} — fastest clean first-try answer ever; onNewBest(ms) fires when beaten.
  */
-export function mountTyping(root, card, onResult, audio) {
+export function mountTyping(root, card, onResult, audio, pb = null, onNewBest = null) {
   const start = performance.now();
   let attempts = 0;
   let hadTypo = false;
@@ -40,6 +41,7 @@ export function mountTyping(root, card, onResult, audio) {
 
   root.innerHTML = `
     <div class="card-wrap typing-wrap">
+      ${pb ? `<div class="type-pb">⚡ 最速 ${(pb.ms / 1000).toFixed(1)}s</div>` : ''}
       <div class="prompt">
         <span class="jp">${card.word}</span>
         <span class="pos">${card.pos || ''}</span>
@@ -79,6 +81,11 @@ export function mountTyping(root, card, onResult, audio) {
       audio.hit();
       feedback.textContent = `${card.kana}（${card.romaji}）`;
       feedback.className = 'type-feedback ok';
+      // Race yourself: a clean first-try answer faster than the record sets a new PB.
+      if (attempts === 1 && !hadTypo && (!pb || elapsedMs < pb.ms)) {
+        feedback.textContent += `　⚡ 新最速 ${(elapsedMs / 1000).toFixed(1)}s！`;
+        if (onNewBest) onNewBest(Math.round(elapsedMs));
+      }
       finish(grade, true);
     } else {
       hadTypo = true;

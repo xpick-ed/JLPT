@@ -178,7 +178,11 @@ function next() {
     const id = queue.shift();
     if (!id) return renderDone(stage);
     const card = byId(id);
-    mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio)
+    mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio, state.ghosts?.typing || null, (ms) => {
+        state.ghosts = { ...(state.ghosts || {}), typing: { ms, at: Date.now() } };
+        state.updated = Date.now();
+        persist();
+      })
       : mode === 'listen' ? mountListening(stage, card, pool, onResult, gameAudio, state.settings.pairMode)
       // 例句挖空 needs the word locatable in its example; ~5–10% of cards
       // aren't (reworded examples) — those get the plain quiz instead.
@@ -199,18 +203,29 @@ function startFalling() {
   if (stopFalling) { stopFalling(); stopFalling = null; }
   const stage = document.getElementById('stage');
   if (pool.length === 0) return renderDone(stage);
-  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, gameAudio, onGameOver, state.settings.pairMode);
+  stopFalling = mountFalling(stage, makeFallingSupply(), onResult, gameAudio, onGameOver, state.settings.pairMode, state.ghosts?.falling || null);
 }
-function onGameOver({ score, maxCombo }) {
+function onGameOver({ score, maxCombo, samples }) {
   if (stopFalling) { stopFalling(); stopFalling = null; }
+  const prevBest = state.ghosts?.falling?.score || 0;
+  const newBest = score > 0 && score > prevBest;
+  if (newBest) {
+    // This run becomes the ghost to race next time.
+    state.ghosts = { ...(state.ghosts || {}), falling: { score, samples, at: Date.now() } };
+    state.updated = Date.now();
+    persist();
+  }
   const stage = document.getElementById('stage');
   stage.innerHTML = `
     <div class="done">
-      <div class="done-emoji">🎮</div>
-      <p class="done-msg">遊戲結束</p>
-      <p class="done-hint">分數 ${score}　·　最高連擊 ${maxCombo}</p>
+      <div class="done-emoji">${newBest ? '👑' : '🎮'}</div>
+      <p class="done-msg">${newBest ? '新紀錄！' : '遊戲結束'}</p>
+      <p class="done-hint">分數 ${score}　·　最高連擊 ${maxCombo}${newBest
+        ? (prevBest ? `　·　舊紀錄 ${prevBest}` : '')
+        : (prevBest ? `　·　最佳 ${prevBest}` : '')}</p>
       <button type="button" id="again-btn" class="practice-btn">再玩一次</button>
     </div>`;
+  if (newBest) confetti(stage);
   const btn = stage.querySelector('#again-btn');
   if (btn) btn.onclick = () => startFalling();
 }
