@@ -28,6 +28,7 @@ const MODES_BY_CONTENT = {
   ],
   // 特訓: study-focused single-card modes over the vocabulary decks.
   drill: [
+    { id: 'mix', label: '混合' },
     { id: 'excloze', label: '例句' },
     { id: 'particle', label: '助詞' },
     { id: 'homophone', label: '同音' },
@@ -149,6 +150,7 @@ function coachHtml(state, stats) {
   const maxLoad = Math.max(1, ...forecast.map(f => f.count));
   const nudge = mockExamNudge(state.exams);
   return `
+    <button type="button" class="btn-primary course-btn">▶ 開始今日課表</button>
     ${days === null
       ? '<div class="coach-countdown coach-unset">在設定裡填上考試日期，開始倒數 →</div>'
       : days >= 0
@@ -505,6 +507,12 @@ export function renderChrome(root, state, getData, handlers) {
       trophyOpen = false;
       render();
       if (handlers.onMockExam) handlers.onMockExam();
+    });
+    const courseBtn = root.querySelector('.course-btn');
+    if (courseBtn) courseBtn.addEventListener('click', () => {
+      trophyOpen = false;
+      render();
+      if (handlers.onStartCourse) handlers.onStartCourse();
     });
     const coachWeak = root.querySelector('.coach-weak-btn');
     if (coachWeak) coachWeak.addEventListener('click', () => {

@@ -51,7 +51,7 @@ function deckFor(content, m) {
   if (content !== 'grammar') return 'vocab';
   return m === 'order' ? 'grammar_order' : 'grammar';
 }
-const DEFAULT_MODE = { vocab: 'match', grammar: 'cloze', drill: 'excloze', reading: 'match' };
+const DEFAULT_MODE = { vocab: 'match', grammar: 'cloze', drill: 'mix', reading: 'match' };
 const activeDeck = () => deckFor(state.settings.content, mode);
 const activeData = () => data[activeDeck()];
 const DECK_PREFIX = { vocab: '', grammar: 'grammar_', grammar_order: 'grammar_order_' };
@@ -174,6 +174,7 @@ function next() {
   audio.setMode(mode);                 // each mode plays its own SFX voice
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();   // stop any listening-mode TTS
   if (state.settings.content === 'reading') return mountReading(stage);
+  if (state.settings.content === 'grammar' && course) updateCourseHud();
   if (state.settings.content === 'grammar') {
     if (mode === 'dict') {
       return mountGrammarDict(stage, pool, (items) => {
@@ -201,8 +202,26 @@ function next() {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
     if (six.length < 1) return renderDone(stage);
     mountMatch(stage, six, onResult, gameAudio, state.settings.pairMode);
+  } else if (mode === 'mix') {
+    // Interleaving: each card gets a random question type it supports.
+    const id = queue.shift();
+    updateCourseHud();
+    if (!id) return renderDone(stage);
+    const card = byId(id);
+    if (!card) return renderDone(stage);
+    const kinds = ['quiz'];
+    if (makeCloze(card)) kinds.push('excloze');
+    if (makeParticleCloze(card)) kinds.push('particle');
+    kinds.push('listen');
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    audio.setMode(kind);
+    return kind === 'excloze' ? mountVocabCloze(stage, card, pool, onResult, gameAudio)
+      : kind === 'particle' ? mountParticle(stage, card, onResult, gameAudio)
+      : kind === 'listen' ? mountListening(stage, card, pool, onResult, gameAudio, state.settings.pairMode)
+      : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   } else {
     const id = queue.shift();
+    updateCourseHud();
     if (!id) return renderDone(stage);
     const card = byId(id);
     mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio, state.ghosts?.typing || null, (ms) => {
@@ -302,6 +321,71 @@ async function startVocabTest() {
   );
 }
 
+// ---------------------------------------------------------------- 今日課表
+// One tap runs the whole day: vocab (mixed types) → weak review → grammar →
+// listening, each segment feeding the normal SRS pipeline.
+let course = null;   // { segments: [{label, content, mode, ids}], si }
+
+function poolIdsFor(deck) {
+  const cats = state.settings.categories;
+  const byLv = data[deck];
+  return state.settings.levels.flatMap(lv => byLv[lv] || [])
+    .filter(c => cats.length === 0 || cats.includes(c.category))
+    .map(c => c.id);
+}
+function shuffleIds(ids) {
+  const a = ids.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function updateCourseHud() {
+  const hud = document.getElementById('course-hud');
+  if (!hud) return;
+  if (!course) { hud.hidden = true; return; }
+  const seg = course.segments[course.si];
+  hud.hidden = false;
+  hud.innerHTML = `<span>課表 ${course.si + 1}/${course.segments.length}・${seg.label}</span><b>剩 ${Math.min(queue.length + 1, seg.ids.length)} 題</b><button type="button" class="course-quit" aria-label="結束課表">✕</button>`;
+  hud.querySelector('.course-quit').onclick = () => { course = null; updateCourseHud(); };
+}
+async function runCourseSegment() {
+  const seg = course.segments[course.si];
+  state.settings.content = seg.content;
+  mode = seg.mode;
+  setCurrentMode(seg.mode);
+  await loadLevels(activeDeck(), state.settings.levels);
+  rebuildPool();
+  queue = seg.ids.slice();
+  practiceKind = 'course';
+  renderAll();
+  updateCourseHud();
+  next();
+}
+async function startCourse() {
+  if (stopFalling) { stopFalling(); stopFalling = null; }
+  await loadLevels('vocab', state.settings.levels);
+  await loadLevels('grammar', state.settings.levels);
+  const now = Date.now();
+  const vocabIds = poolIdsFor('vocab');
+  const grammarIds = poolIdsFor('grammar');
+  const dueNew = buildQueue(state, vocabIds, now).slice(0, 40);
+  const usedSet = new Set(dueNew);
+  const weak = shuffleIds(vocabIds.filter(id => !usedSet.has(id) && isWeakCard(state.cards[id]))).slice(0, 15);
+  const grammarQ = buildQueue(state, grammarIds, now).slice(0, 15);
+  const listenIds = shuffleIds(vocabIds).slice(0, 10);
+  const segments = [
+    dueNew.length && { label: '單字混合', content: 'drill', mode: 'mix', ids: dueNew },
+    weak.length && { label: '弱點複習', content: 'drill', mode: 'mix', ids: weak },
+    grammarQ.length && { label: '文法', content: 'grammar', mode: 'cloze', ids: grammarQ },
+    listenIds.length && { label: '聽力', content: 'drill', mode: 'listen', ids: listenIds },
+  ].filter(Boolean);
+  if (!segments.length) { showToast('今天沒有可排的內容 🎉'); return; }
+  course = { segments, si: 0 };
+  await runCourseSegment();
+}
+
 function startMockExam() {
   if (stopFalling) { stopFalling(); stopFalling = null; }
   const levels = ['n5', 'n4', 'n3', 'n2', 'n1'];
@@ -327,6 +411,27 @@ function startMockExam() {
 }
 
 function renderDone(stage) {
+  // Course flow: a finished segment advances instead of stopping.
+  if (course) {
+    const finished = course.segments[course.si];
+    course.si += 1;
+    if (course.si < course.segments.length) {
+      showToast(`✅ ${finished.label} 完成`);
+      runCourseSegment();
+      return;
+    }
+    const n = course.segments.length;
+    course = null;
+    updateCourseHud();
+    stage.innerHTML = `
+      <div class="done">
+        <div class="done-emoji">🎓</div>
+        <p class="done-msg">今日課表完成！</p>
+        <p class="done-hint">${n} 個段落全部做完，明天見。</p>
+      </div>`;
+    confetti(stage);
+    return;
+  }
   const empty = pool.length === 0;
   const weakDone = !empty && practiceKind === 'weak';
   stage.innerHTML = `
@@ -383,9 +488,10 @@ function signOut() {
 
 function renderAll() {
   renderChrome(document.getElementById('chrome'), state, activeData, {
-    onModeChange: async m => { if (stopFalling) { stopFalling(); stopFalling = null; } mode = m; await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); renderAll(); next(); },
+    onModeChange: async m => { if (stopFalling) { stopFalling(); stopFalling = null; } course = null; updateCourseHud(); mode = m; await loadLevels(activeDeck(), state.settings.levels); rebuildPool(); renderAll(); next(); },
     onContentChange: async c => {
       if (stopFalling) { stopFalling(); stopFalling = null; }
+      course = null; updateCourseHud();
       state.settings.content = c;
       mode = DEFAULT_MODE[c] || 'match';
       state.updated = Date.now();
@@ -398,6 +504,7 @@ function renderAll() {
     onWeakReview: () => startWeakReview(),
     onVocabTest: () => startVocabTest(),
     onMockExam: () => startMockExam(),
+    onStartCourse: () => startCourse(),
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),

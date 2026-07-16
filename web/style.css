@@ -1324,6 +1324,41 @@ button {
 }
 
 .coach-block { margin-bottom: 20px; }
+.course-btn { width: 100%; margin-bottom: 14px; padding: 12px; font-size: 15px; }
+
+#course-hud {
+  position: fixed;
+  top: auto;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px 7px 14px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--kin);
+  box-shadow: var(--shadow-lg);
+  font-size: 12.5px;
+  color: var(--ink);
+  z-index: 59;
+}
+#course-hud[hidden] { display: none; }
+#course-hud b { font-family: var(--font-mono); color: var(--shu); }
+.course-quit {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-dim);
+  border: 1px solid var(--border);
+  font-size: 11px;
+}
+.course-quit:hover { color: var(--ink); background: var(--surface); }
 .coach-countdown { font-size: 15px; color: var(--ink); margin-bottom: 12px; }
 .coach-countdown b { color: var(--shu); }
 .coach-days { font-family: var(--font-mono); font-size: 22px; }
