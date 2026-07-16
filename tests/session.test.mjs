@@ -16,6 +16,6 @@ test('applyGrade creates then schedules a card immutably', () => {
   const s2 = applyGrade(s, 'a', 'good', T);
   assert.equal(s.cards.a, undefined);            // original untouched
   assert.equal(s2.cards.a.reps, 1);
-  assert.equal(s2.cards.a.interval, 1);
+  assert.equal(s2.cards.a.interval, 4);   // FSRS initial 'good' stability
   assert.equal(s2.updated, T);
 });

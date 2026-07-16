@@ -1373,6 +1373,22 @@ button {
 .hm-3 { background: var(--shu); opacity: .75; }
 .hm-4 { background: var(--shu); opacity: 1; }
 
+.ret-row, .diff-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
+.ret-label { font-size: 12px; color: var(--ink-dim); white-space: nowrap; }
+.ret-label b { color: var(--shu); font-family: var(--font-mono); }
+.ret-label em { font-style: normal; font-size: 11px; }
+.ret-bars { display: flex; align-items: flex-end; gap: 2px; height: 28px; flex: 1; }
+.ret-bar { flex: 1; min-width: 3px; border-radius: 2px 2px 0 0; background: var(--shu); opacity: .8; }
+.ret-bar.ret-none { height: 2px; background: var(--border-strong); }
+.diff-row { align-items: center; }
+.diff-bar { display: flex; flex: 1; height: 10px; border-radius: 999px; overflow: hidden; gap: 1px; }
+.diff-seg { display: block; }
+.diff-0 { background: #7fb069; }
+.diff-1 { background: var(--kin); opacity: .7; }
+.diff-2 { background: var(--kin); }
+.diff-3 { background: var(--shu); opacity: .75; }
+.diff-4 { background: var(--shu); }
+
 .mastery-list { display: flex; flex-direction: column; gap: 8px; }
 .mastery {
   display: flex;

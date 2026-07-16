@@ -2,7 +2,7 @@ import { DEFAULT_SETTINGS } from './store.js';
 import { BGM_STYLES, normalizeStyle } from './bgm.js';
 import { currentStreak, dailySummary, isWeakCard } from './progress.js';
 import { ACHIEVEMENTS, questProgress } from './achievements.js';
-import { heatmapCells, intensity, levelMastery, totals } from './stats.js';
+import { heatmapCells, intensity, levelMastery, totals, retentionSeries, overallRetention, difficultyBuckets } from './stats.js';
 import { daysUntil, dueForecast, todayMenu, mockExamNudge } from './coach.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
@@ -170,6 +170,33 @@ function coachHtml(state, stats) {
     <div class="coach-forecast-label">未來 30 天到期複習量（最高 ${maxLoad === 1 ? 0 : maxLoad} 題/日）</div>`;
 }
 
+const DIFF_LABELS = ['很容易', '容易', '中等', '偏難', '很難'];
+
+function retentionHtml(state) {
+  const series = retentionSeries(state, 30);
+  const overall = overallRetention(state);
+  const diffs = difficultyBuckets(state);
+  const diffTotal = diffs.reduce((a, b) => a + b, 0);
+  if (overall === null && !diffTotal) return '';
+  return `
+    ${overall === null ? '' : `
+    <div class="ret-row">
+      <span class="ret-label">記憶保留率 <b>${Math.round(overall * 100)}%</b><em>（舊卡回憶成功率，近 30 天逐日）</em></span>
+      <span class="ret-bars">
+        ${series.map(p => p.rate === null
+          ? '<span class="ret-bar ret-none" title="' + p.key + '：無複習"></span>'
+          : `<span class="ret-bar" style="height:${Math.max(3, Math.round(p.rate * 26))}px" title="${p.key}：${Math.round(p.rate * 100)}%（${p.n} 題）"></span>`).join('')}
+      </span>
+    </div>`}
+    ${diffTotal ? `
+    <div class="diff-row" aria-label="卡片難度分佈（FSRS）">
+      <span class="ret-label">難度分佈</span>
+      <span class="diff-bar">
+        ${diffs.map((n, i) => n ? `<span class="diff-seg diff-${i}" style="flex:${n}" title="${DIFF_LABELS[i]}：${n} 張"></span>` : '').join('')}
+      </span>
+    </div>` : ''}`;
+}
+
 function statsHtml(state, dataByLevel) {
   const cells = heatmapCells(state, { weeks: 20 });
   const t = totals(state);
@@ -185,6 +212,7 @@ function statsHtml(state, dataByLevel) {
     <div class="heatmap" role="img" aria-label="近 20 週每日學習熱力圖">
       ${cells.map(c => `<span class="hm hm-${intensity(c.count)}" title="${c.key}：${c.count} 題"></span>`).join('')}
     </div>
+    ${retentionHtml(state)}
     ${mastery.length ? `<div class="mastery-list">
       ${mastery.map(m => `
         <div class="mastery">

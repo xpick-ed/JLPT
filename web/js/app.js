@@ -118,6 +118,8 @@ function onResult(id, grade) {
   const now = Date.now();
   const seconds = Math.max(1, (now - lastActivityAt) / 1000);
   lastActivityAt = now;
+  const prior = state.cards[id];
+  const isRecall = !!(prior && prior.reps > 0);   // seen before → counts toward retention
   const graded = applyGrade(state, id, grade, now);
   const correct = grade !== 'again';
   const prevMultiplier = comboState.multiplier;
@@ -128,7 +130,7 @@ function onResult(id, grade) {
   if (comboState.combo > (graded.best?.combo || 0)) graded.best = { ...(graded.best || {}), combo: comboState.combo, updated: now };
   const reviewedBefore = dailySummary(state).reviewed;
   const questsBefore = questProgress(state, now);
-  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, points: comboState.gained, combo: comboState.combo, now }));
+  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, points: comboState.gained, combo: comboState.combo, recall: isRecall ? correct : null, now }));
   // Newly earned badges: toast + celebrate, then persist with everything else.
   const { earned, newly } = evaluateAchievements(state, now);
   if (newly.length) {
