@@ -168,9 +168,25 @@ button {
    nothing (incl. ⚙/☀) gets pushed off-screen. */
 @media (max-width: 560px) {
   .chrome-top { flex-wrap: wrap; row-gap: 8px; }
-  .tabs { order: 5; flex-basis: 100%; overflow-x: auto; justify-content: flex-start; }
-  .tabs .tab { flex: 0 0 auto; }
+  .tabs {
+    order: 5;
+    flex-basis: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs .tab { flex: 0 0 auto; scroll-snap-align: start; }
+  /* comfortable thumb targets on touch screens */
+  .opt { min-height: 48px; }
+  .chip { min-height: 34px; }
 }
+
+.onboard-wrap { text-align: left; }
+.onboard-wrap .vt-title, .onboard-wrap > .vt-desc:first-of-type { text-align: center; }
+.onboard-wrap .exam-levels { justify-content: flex-start; }
 
 .brand {
   display: flex;
@@ -1325,6 +1341,7 @@ button {
 
 .coach-block { margin-bottom: 20px; }
 .course-btn { width: 100%; margin-bottom: 14px; padding: 12px; font-size: 15px; }
+.backup-row { display: flex; gap: 8px; }
 
 #course-hud {
   position: fixed;

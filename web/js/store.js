@@ -4,7 +4,7 @@ import { mergeAchievements } from './achievements.js';
 import { mergeTests } from './vocab-test.js';
 import { mergeGhosts } from './ghost.js';
 
-export const DEFAULT_SETTINGS = { newPerDay: 50, dailyGoal: 50, levels: ['n2'], categories: [], sound: true, bgm: 'off', pairMode: 'reading', theme: 'system', content: 'vocab', examDate: '', examLevel: '' };
+export const DEFAULT_SETTINGS = { newPerDay: 50, dailyGoal: 50, levels: ['n2'], categories: [], sound: true, bgm: 'off', pairMode: 'reading', theme: 'system', content: 'vocab', examDate: '', examLevel: '', onboarded: false };
 const KEY = 'vocabmatch.state';
 
 export function emptyState() {

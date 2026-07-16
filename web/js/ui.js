@@ -458,6 +458,15 @@ export function renderChrome(root, state, getData, handlers) {
               <option value="reading">假名讀音（只出漢字詞）</option>
             </select>
           </label>
+          <div class="field">
+            <span>資料備份</span>
+            <div class="backup-row">
+              <button type="button" class="btn-ghost" id="set-export">⬇ 匯出進度</button>
+              <button type="button" class="btn-ghost" id="set-import-btn">⬆ 匯入備份</button>
+              <input type="file" id="set-import" accept="application/json,.json" hidden>
+            </div>
+            <p class="account-hint">匯入會與現有進度「合併」（各卡取較新者），不會整份覆蓋。</p>
+          </div>
           <div class="settings-actions">
             <button type="button" class="btn-ghost" id="set-reset">重置設定</button>
             <button type="button" class="btn-primary" id="set-close">完成</button>
@@ -587,6 +596,33 @@ export function renderChrome(root, state, getData, handlers) {
     if (pm) {
       pm.value = s.pairMode || 'meaning';
       pm.addEventListener('change', () => handlers.onSettingsChange({ pairMode: pm.value }));
+    }
+    const exportBtn = root.querySelector('#set-export');
+    if (exportBtn) exportBtn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const d = new Date();
+      a.download = `jlpt-backup-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    });
+    const importInput = root.querySelector('#set-import');
+    const importBtn = root.querySelector('#set-import-btn');
+    if (importBtn && importInput) {
+      importBtn.addEventListener('click', () => importInput.click());
+      importInput.addEventListener('change', async () => {
+        const file = importInput.files && importInput.files[0];
+        if (!file) return;
+        try {
+          const parsed = JSON.parse(await file.text());
+          if (!parsed || typeof parsed.cards !== 'object') throw new Error('bad shape');
+          if (handlers.onImportData) handlers.onImportData(parsed);
+        } catch {
+          showToast('❌ 這不是有效的備份檔');
+        }
+        importInput.value = '';
+      });
     }
     const reset = root.querySelector('#set-reset');
     if (reset) reset.addEventListener('click', () => {

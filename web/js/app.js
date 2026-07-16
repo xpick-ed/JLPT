@@ -1,4 +1,4 @@
-import { loadState, saveState, applySync } from './store.js';
+import { loadState, saveState, applySync, mergeStates } from './store.js';
 import { buildQueue, applyGrade } from './session.js';
 import { exchangeSession, pull, push } from './sync.js';
 import { getSession, setSession, clearSession, initGoogle, renderButton, getOwner, setOwner, clearOwner } from './auth.js';
@@ -505,6 +505,16 @@ function renderAll() {
     onVocabTest: () => startVocabTest(),
     onMockExam: () => startMockExam(),
     onStartCourse: () => startCourse(),
+    onImportData: async (parsed) => {
+      const before = Object.keys(state.cards).length;
+      Object.assign(state, mergeStates(state, parsed));
+      persist();
+      showToast(`✅ 已合併備份（卡片 ${before} → ${Object.keys(state.cards).length}）`);
+      await loadLevels(activeDeck(), state.settings.levels);
+      rebuildPool();
+      renderAll();
+      next();
+    },
     getAccount: () => getSession(),
     onSignOut: () => signOut(),
     mountSignIn: (el) => renderButton(el),
@@ -524,6 +534,52 @@ addEventListener('pagehide', () => {
   }
 });
 
+// First-run setup: pick a level, exam date, and daily goal in one screen.
+function renderOnboarding(stage) {
+  const LV = ['n5', 'n4', 'n3', 'n2', 'n1'];
+  let lv = 'n5';
+  function render() {
+    stage.innerHTML = `
+      <div class="card-wrap vt-wrap onboard-wrap">
+        <h2 class="vt-title">👋 歡迎來到 JLPT 學習道場</h2>
+        <p class="vt-desc">30 秒設定，馬上開始。之後都能在 ⚙ 設定裡改。</p>
+        <div class="field"><span>目標級別</span>
+          <div class="chip-row exam-levels">
+            ${LV.map(x => `<button type="button" class="chip${x === lv ? ' active' : ''}" data-lv="${x}">${x.toUpperCase()}</button>`).join('')}
+          </div>
+        </div>
+        <label class="field"><span>考試日期（可留空）</span><input type="date" id="ob-date"></label>
+        <label class="field"><span>每日目標（題）</span>
+          <select id="ob-goal"><option>30</option><option selected>50</option><option>80</option></select>
+        </label>
+        <p class="vt-desc">上方分頁：<b>單字</b>＝遊戲式記單字、<b>文法</b>＝句型練習與字典、<b>特訓</b>＝混合/聽力/變位等深度練習、<b>閱讀</b>＝每日讀物。🏅 是任務、統計與「開始今日課表」。</p>
+        <div class="vt-actions">
+          <button type="button" class="btn-ghost" id="ob-skip">先逛逛</button>
+          <button type="button" class="btn-primary" id="ob-start">開始學習</button>
+        </div>
+      </div>`;
+    stage.querySelectorAll('.exam-levels .chip').forEach(b => b.onclick = () => { lv = b.dataset.lv; render(); });
+    stage.querySelector('#ob-skip').onclick = () => finish(false);
+    stage.querySelector('#ob-start').onclick = () => finish(true);
+  }
+  async function finish(apply) {
+    if (apply) {
+      state.settings.levels = [lv];
+      state.settings.examLevel = lv;
+      state.settings.examDate = stage.querySelector('#ob-date').value || '';
+      state.settings.dailyGoal = parseInt(stage.querySelector('#ob-goal').value, 10) || 50;
+    }
+    state.settings.onboarded = true;
+    state.updated = Date.now();
+    persist();
+    await loadLevels(activeDeck(), state.settings.levels);
+    rebuildPool();
+    renderAll();
+    next();
+  }
+  render();
+}
+
 (async function boot() {
   initGoogle(GOOGLE_CLIENT_ID, onCredential);   // non-blocking; sets up the sign-in callback
   if (WORKER_URL && getSession()) await syncNow();
@@ -533,7 +589,11 @@ addEventListener('pagehide', () => {
     rebuildPool();
   }
   renderAll();
-  next();
+  if (!state.settings.onboarded && Object.keys(state.cards).length === 0) {
+    renderOnboarding(document.getElementById('stage'));
+  } else {
+    next();
+  }
   // Autoplay is blocked until a user gesture, so if a BGM style was left on,
   // start it on the first interaction. (Changing it in settings is a gesture.)
   if (normalizeStyle(state.settings.bgm) !== 'off') {
