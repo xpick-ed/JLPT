@@ -6,6 +6,18 @@
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。素材齊全，靠每天執行（聽力見 LISTENING_PLAN.md）；讀解技巧＋考古題於 Phase 3-4
 - 待審稿（可選）: N1 單字/文法只做了程式驗證，未經對抗式 agent 審稿（因額度上限中止）；想要時補跑 15 個審稿 agent（同 N2 流程）
 - 網頁學習道場: 已完成（web/，單字六模式＋文法兩模式＋閱讀＋SM-2 SRS＋Google 登入同步）。本機試玩：`npm run dev`。
+  - 2026-07-17 學習功能大改版（9 項，PWA v28，156/156 JS 測試全過，各功能皆 Playwright 實測）:
+    ① 頂層新增「特訓」分頁承載學習型模式（例句/聽力自單字移入；單字回歸四遊戲模式）；DEFAULT_MODE 集中管理 content→mode
+    ② 助詞填空（例句挖 は/が/を/に/で/と/も/へ/から/まで，只在漢字/振假名邊界後匹配防誤挖，覆蓋 80–96%，無助詞卡 fallback 四選一）
+    ③ 同音辨析（同讀音不同漢字選意思相符寫法，答後全選項顯示意思；同音組不足時補形似干擾項）
+    ④ 文法句型字典（文法第三模式「字典」：pattern 分組、可搜尋、接續/說明/例句、「練習這個句型」直跳 cloze）
+    ⑤ 聽寫重組（TTS 唸整句、片段排回原句；chunkSentence 按助詞/標點切 3–5 段保證重組還原；約半數例句適用）
+    ⑥ 跟讀（TTS 0.7–1.15x 變速、字幕/中譯可模糊化、隨機循環例句；無 SRS）
+    ⑦ 動詞變位特訓（conjugate.js 引擎吃 pos 動I/II/III 分類、9 種形按級別開放、行く/ある例外；1,743 動詞全形驗證；打字作答）
+    ⑧ 考前教練（設定考試日期/級別 → 🏅 面板倒數＋依 due/weak 自動今日菜單＋未來 30 天複習量預報圖＋每週模擬考提醒）
+    ⑨ Pitch accent（kanjium 篩出 5,541 詞聲調存 data/pitch_accents.tsv，build 合入 card.acc；OJAD 式高低線＋下降點，quiz/打字/聽力/例句/跟讀顯示）
+    ⑩ 漢字筆順描紅（KanjiVG 抽 1,940 字筆順進 web/data/strokes_*.json；描紅驗起終點＋長度強制筆順、看動畫/提示單筆；build_strokes.py 重建）
+    - 新增純函式模組 conjugate/coach/pitch/ghost 等皆有測試；card.acc 為新欄位但 ID 穩定（ID 只雜湊 word|kana）。資料授權：kanjium/KanjiVG 皆 CC BY-SA，出處已註記於檔頭。
   - 2026-07-16 遊戲化＋新模式大改版（10 項，PWA v20，117/117 JS 測試全過，各功能皆 Playwright 實測）:
     ① 全域 combo 計分（10 分×連擊倍率 ×2/×3/×4 於 5/10/20，底部 HUD、跨模式、每日分數入 daily bucket 防重複計數、all-time best 存 state.best max-merge）
     ② 微動畫（卡片 3D 翻入、進度條光澤、升倍率粒子、達成每日目標 confetti）
