@@ -17,6 +17,22 @@ export function isLanded(tileY, tileH, floorY) {
   return tileY + tileH >= floorY;
 }
 
+// Power-ups: earned every 5-streak, delivered as a falling tile. Clicking it
+// activates the effect; letting it land just loses it (no life cost).
+export const POWER_UPS = [
+  { id: 'bomb',   icon: '💣', label: '清屏' },
+  { id: 'slow',   icon: '⏳', label: '緩速' },
+  { id: 'double', icon: '✨', label: '雙倍分' },
+];
+export const SLOW_MS = 8000, SLOW_FACTOR = 0.5, DOUBLE_MS = 10000;
+
+export function shouldDropPower(combo) {
+  return combo > 0 && combo % 5 === 0;
+}
+export function pickPowerUp(rnd = Math.random) {
+  return POWER_UPS[Math.floor(rnd() * POWER_UPS.length)];
+}
+
 const LIVES = 3;
 const TILE_H = 64;         // must match .fall-tile height in CSS
 const TILE_W = 120;        // must match .fall-tile width in CSS
@@ -43,6 +59,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
       <span class="fall-lives"></span>
       <span class="fall-score">分數 <b>0</b></span>
       <span class="fall-combo" hidden>連擊 <b>0</b></span>
+      <span class="fall-fx"></span>
     </div>
     <div class="fall-field"></div>
     <div class="fall-floor"></div>`;
@@ -51,8 +68,10 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
   const scoreEl = root.querySelector('.fall-score b');
   const comboWrap = root.querySelector('.fall-combo');
   const comboEl = root.querySelector('.fall-combo b');
+  const fxEl = root.querySelector('.fall-fx');
 
   let lives = LIVES, score = 0, combo = 0, maxCombo = 0, cleared = 0;
+  let pendingPower = null, slowUntil = 0, doubleUntil = 0;
   let tiles = [];            // live: { el, pairId, type, spawnedAt }
   let buffer = [];           // pending specs: { pairId, type, html }
   const firstSpawn = new Map(); // pairId -> earliest spawn time (for grading)
@@ -95,13 +114,29 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
       if (topY > 14) free.push(i);            // lane's top tile cleared the spawn zone (14px gap, no overlap)
     }
     if (!free.length) return;                  // every lane busy up top → wait a frame
-    refill();
-    const spec = buffer.shift();
-    if (!spec) return;
     const now = performance.now();
     const lane = free[Math.floor(Math.random() * free.length)];
     const laneW = w / laneCount;
     const x = Math.max(0, Math.min(w - TILE_W, lane * laneW + (laneW - TILE_W) / 2));
+    if (pendingPower) {                        // an earned power-up jumps the queue
+      const p = pendingPower;
+      pendingPower = null;
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'fall-tile fall-power';
+      el.dataset.power = p.id;
+      el.innerHTML = `<span class="ft-text">${p.icon}<span class="ft-sub">${p.label}</span></span>`;
+      el.style.left = x + 'px';
+      el._y = -TILE_H;
+      el.style.transform = `translateY(${el._y}px)`;
+      field.appendChild(el);
+      tiles.push({ el, pairId: '__power', type: 'power', spawnedAt: now, lane });
+      lastSpawn = now;
+      return;
+    }
+    refill();
+    const spec = buffer.shift();
+    if (!spec) return;
     const el = document.createElement('button');
     el.type = 'button';
     el.className = `fall-tile fall-${spec.type}`;
@@ -143,12 +178,36 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
 
   function matchPair(pairId) {
     const start = firstSpawn.get(pairId);
-    onResult(pairId, gradeFalling(performance.now() - (start ?? performance.now())));
+    const now = performance.now();
+    onResult(pairId, gradeFalling(now - (start ?? now)));
     combo += 1; maxCombo = Math.max(maxCombo, combo);
-    score += 10 * combo; cleared += 1;
+    score += 10 * combo * (now < doubleUntil ? 2 : 1); cleared += 1;
+    if (shouldDropPower(combo)) pendingPower = pickPowerUp();
     audio.hit(combo);
     for (const t of tiles.filter(t => t.pairId === pairId)) removeTile(t, 'fall-clear');
     firstSpawn.delete(pairId);
+    renderHud();
+  }
+
+  function activatePower(id, el) {
+    const rec = tiles.find(t => t.el === el);
+    if (rec) removeTile(rec, 'fall-clear');
+    const now = performance.now();
+    if (id === 'slow') slowUntil = now + SLOW_MS;
+    else if (id === 'double') doubleUntil = now + DOUBLE_MS;
+    else if (id === 'bomb') {
+      // Clear the whole board (a rescue, not a review): small score per tile,
+      // no SRS grading — the learner never answered these.
+      for (const t of tiles.slice()) {
+        if (t.type === 'power') continue;
+        removeTile(t, 'fall-clear');
+        buffer = buffer.filter(s => s.pairId !== t.pairId);
+        firstSpawn.delete(t.pairId);
+        score += 5;
+      }
+      selected = null;
+    }
+    audio.clear();
     renderHud();
   }
 
@@ -156,6 +215,7 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
   function onClick(e) {
     const el = e.target.closest('.fall-tile');
     if (!el || el.classList.contains('gone')) return;
+    if (el.dataset.power) { activatePower(el.dataset.power, el); return; }
     if (selected && selected.el === el) { el.classList.remove('picked'); selected = null; return; }
     if (!selected) { selected = { el, pairId: el.dataset.pairId, type: el.dataset.type }; el.classList.add('picked'); return; }
     const samePair = selected.pairId === el.dataset.pairId;
@@ -179,14 +239,19 @@ export function mountFalling(root, supply, onResult, audio, onGameOver, pairMode
     const dt = lastFrame ? (now - lastFrame) : 16;
     lastFrame = now;
     const { fallSpeed, spawnInterval } = nextDifficulty(cleared);
+    const slowed = now < slowUntil;
+    const speed = fallSpeed * (slowed ? SLOW_FACTOR : 1);
     if (now - lastSpawn >= spawnInterval && tiles.length < MAX_ACTIVE) spawnOne();
     const fy = floorY();
     for (const rec of tiles.slice()) {
       if (rec.el.classList.contains('gone')) continue;
-      rec.el._y += fallSpeed * dt / 1000;
+      rec.el._y += speed * dt / 1000;
       rec.el.style.transform = `translateY(${rec.el._y}px)`;
-      if (isLanded(rec.el._y, TILE_H, fy)) handleLand(rec);
+      if (isLanded(rec.el._y, TILE_H, fy)) {
+        rec.type === 'power' ? removeTile(rec, 'fall-miss') : handleLand(rec);
+      }
     }
+    fxEl.textContent = `${slowed ? '⏳' : ''}${now < doubleUntil ? '✨' : ''}`;
     raf = requestAnimationFrame(frame);
   }
 

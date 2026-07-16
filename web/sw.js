@@ -1,7 +1,7 @@
 // PWA service worker: precache the app shell, serve same-origin GET via
 // stale-while-revalidate. Cross-origin (Worker sync, GIS, Google Fonts) is
 // never intercepted — those always go to the network.
-const CACHE = 'jlpt-pwa-v16';   // bump on each release to refresh the shell
+const CACHE = 'jlpt-pwa-v17';   // bump on each release to refresh the shell
 const SHELL = [
   './', './index.html', './style.css', './config.js', './manifest.json',
   './js/app.js', './js/ui.js', './js/store.js', './js/session.js', './js/srs.js', './js/progress.js',

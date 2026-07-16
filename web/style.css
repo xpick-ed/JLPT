@@ -701,6 +701,13 @@ button {
 }
 .fall-tile:hover:not(.gone) { border-color: var(--shu); }
 
+.fall-tile.fall-power {
+  border-color: var(--kin);
+  box-shadow: 0 0 14px var(--kin-glow);
+}
+.fall-tile.fall-power .ft-text { font-size: 22px; }
+.fall-fx { font-size: 15px; min-width: 40px; }
+
 .ft-text {
   display: inline-block;
   font-family: var(--font-display);
