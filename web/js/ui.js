@@ -96,7 +96,7 @@ export function confetti(root) {
 }
 
 /** Fixed HUD for the global cross-mode streak; appears from 2 in a row. */
-export function updateComboHud(c, { newRecord = false } = {}) {
+export function updateComboHud(c, { newRecord = false, tierUp = false } = {}) {
   const hud = document.getElementById('combo-hud');
   if (!hud) return;
   if (c.combo < 2) {
@@ -105,6 +105,10 @@ export function updateComboHud(c, { newRecord = false } = {}) {
     return;
   }
   hud.hidden = false;
+  if (tierUp) {
+    const r = hud.getBoundingClientRect();
+    particles(r.left + r.width / 2, r.top + r.height / 2);
+  }
   hud.innerHTML = `
     <span class="combo-hud-n">${c.combo}</span><span class="combo-hud-label">連擊</span>
     ${c.multiplier > 1 ? `<span class="combo-hud-x">×${c.multiplier}</span>` : ''}

@@ -6,7 +6,7 @@ import { makeAudio } from './audio.js';
 import { makeBgm, normalizeStyle } from './bgm.js';
 import { makeCombo, applyAnswer } from './combo.js';
 import { renderChrome, updateStudyStats, updateComboHud, confetti } from './ui.js';
-import { isWeakCard, recordActivity } from './progress.js';
+import { isWeakCard, recordActivity, dailySummary } from './progress.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
@@ -103,16 +103,28 @@ function onResult(id, grade) {
   lastActivityAt = now;
   const graded = applyGrade(state, id, grade, now);
   const correct = grade !== 'again';
+  const prevMultiplier = comboState.multiplier;
   comboState = applyAnswer(comboState, correct);
   if (!correct) recordCelebrated = false;
   const newRecord = correct && !recordCelebrated && comboState.combo > (graded.best?.combo || 0) && comboState.combo >= 5;
   if (newRecord) recordCelebrated = true;
   if (comboState.combo > (graded.best?.combo || 0)) graded.best = { ...(graded.best || {}), combo: comboState.combo, updated: now };
+  const reviewedBefore = dailySummary(state).reviewed;
   Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, points: comboState.gained, now }));
   persist();
   updateStudyStats(document.getElementById('chrome'), state, activeData);
-  updateComboHud(comboState, { newRecord });
+  updateComboHud(comboState, { newRecord, tierUp: correct && comboState.multiplier > prevMultiplier });
   if (newRecord) confetti(document.getElementById('stage'));
+  // Daily-goal crossing: celebrate once, at the answer that reaches the goal.
+  const goal = Math.max(1, state.settings.dailyGoal || 50);
+  if (reviewedBefore < goal && dailySummary(state).reviewed >= goal) {
+    const track = document.querySelector('.today-progress-track');
+    if (track) {
+      confetti(track);
+      track.classList.add('goal-hit');
+      setTimeout(() => track.classList.remove('goal-hit'), 1200);
+    }
+  }
   if (mode !== 'falling' && !advancePending) {
     advancePending = true;
     queueMicrotask(() => { advancePending = false; next(); });
