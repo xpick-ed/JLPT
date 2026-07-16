@@ -5,9 +5,22 @@
 - Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md。五級單字書（N5 793/N4 994/N3 1954/N2 1770/N1 1763）＋五級文法句型書（N5 90/N4 122/N3 157/N2 172/N1 130）＋聽力菜單＋N1 計畫皆完成
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。素材齊全，靠每天執行（聽力見 LISTENING_PLAN.md）；讀解技巧＋考古題於 Phase 3-4
 - 待審稿（可選）: N1 單字/文法只做了程式驗證，未經對抗式 agent 審稿（因額度上限中止）；想要時補跑 15 個審稿 agent（同 N2 流程）
-- 網頁學習道場: 已完成（web/，單字四模式＋文法兩模式＋閱讀＋SM-2 SRS＋Google 登入同步）。本機試玩：`npm run dev`。
+- 網頁學習道場: 已完成（web/，單字六模式＋文法兩模式＋閱讀＋SM-2 SRS＋Google 登入同步）。本機試玩：`npm run dev`。
+  - 2026-07-16 遊戲化＋新模式大改版（10 項，PWA v20，117/117 JS 測試全過，各功能皆 Playwright 實測）:
+    ① 全域 combo 計分（10 分×連擊倍率 ×2/×3/×4 於 5/10/20，底部 HUD、跨模式、每日分數入 daily bucket 防重複計數、all-time best 存 state.best max-merge）
+    ② 微動畫（卡片 3D 翻入、進度條光澤、升倍率粒子、達成每日目標 confetti）
+    ③ 成就徽章 14 枚＋每日任務 3 則（🏅 面板；achievements union-merge、任務由日期種子決定跨裝置一致、bucket 新增當日最高 combo）
+    ④ 聽力 TTS 模式（speechSynthesis ja-JP 唸假名選漢字/意思，補上聽力 MVP）
+    ⑤ 例句挖空模式（makeCloze 詞幹縮減對付動詞變位，題庫覆蓋 90–99%，其餘 fallback 四選一）
+    ⑥ 模擬考（單級 40 題：語彙20+文法15+並べ替え5、15 分計時自動交卷、成績單＋錯題複習、state.exams 歷史）
+    ⑦ 學習統計（20 週熱力圖＋各級 seen/mature 掌握條＋累計數據，於 🏅 面板）
+    ⑧ 詞彙量檢定（分層抽樣 40 題、猜測校正、外插估計詞彙量映射 N 級、state.vocabTests 歷史）
+    ⑨ 落下 power-ups（每 5 連擊掉道具：💣清屏無 SRS 影響/⏳緩速 8s/✨雙倍分 10s）
+    ⑩ 幽靈對手（落下 PB 分數 tape 即時對照 👻、打字最速一次答對 ⚡ 紀錄；state.ghosts）
+    - 新增純函式模組 combo/achievements/stats/vocab-test/exam/ghost.js 皆有單元測試；所有持久化新欄位向後相容且有 merge 規則（見各檔案）。模擬考/詞彙檢定不動 SRS。
+    - 注意: 本機 python http.server 無 cache header，瀏覽器啟發式快取會讓改版看似未生效——正式站無此問題（SW CACHE bump 即可），本機驗證需硬清快取。
   - 2026-07-15 學習進度改版: 新增今日目標進度條、正確率、連續天數、弱點題數與一鍵弱點複習；活動按裝置彙總，跨裝置合併不重複計數；舊 localStorage/遠端資料自動補預設值。弱點由最近 again/hard、反覆失誤或低 ease 判定。PWA v10 預快取五級全部單字/文法題庫（約 2.6 MB），真正首次安裝即可離線。品牌改為「JLPT 學習道場」，新增 `npm run dev/test/build:data`，專案說明補入 CLAUDE.md。19 個 JS 測試檔＋14 個 Python unit tests＋資料重建驗證全過。
-  - 工程交接: 根目錄 `AGENT.md` 已補上常用指令、架構地圖、資料相容性與驗證規則。學習進度改版在 commit `db8731a`；下一個產品優先序是正式站瀏覽器／雙裝置 smoke test，之後再做首次設定導引與聽力 MVP。
+  - 工程交接: 根目錄 `AGENT.md` 已補上常用指令、架構地圖、資料相容性與驗證規則。下一個產品優先序仍是正式站瀏覽器／雙裝置 smoke test（Google 登入＋同步，順便驗新欄位 best/achievements/vocabTests/exams/ghosts 的雙裝置 merge），之後做首次設定導引。聽力 MVP 已由 TTS 模式補上。
   - 背景音樂（BGM，程式合成、無版權/無檔案、可選樣式）已上線: web/js/bgm.js makeBgm(style)＝Web Audio 即時生成的平緩環境樂（C 大調五聲琶音＋sustained pad＋LFO 呼吸＋feedback delay，音量低、consonant）。BGM_STYLES＝off/空靈(ambient)/lo-fi 慵懶(lofi)/輕快(bright)，同引擎不同參數（filter cutoff/octave/tempo/delay/osc 型別）；設定改成「背景音樂」下拉選單（settings.bgm＝樣式字串，預設 'off'）。normalizeStyle 相容舊 boolean（true→ambient、false→off）。app.js setStyle 切換（一個 AudioContext 重用、換樣式淡出淡入）＋reload 若非 off 則第一次 gesture 才啟動（autoplay 政策）。sw.js CACHE 升 v7。midiToFreq/ARP_NOTES/BGM_STYLES/normalizeStyle 有純函式測試。65/65 測試，Playwright 驗過（4 選項、預設 off 無 context、三樣式皆在同一重用 context 上 running、off↔樣式切換正常、除 GIS 環境噪音外 0 error）。想再調各樣式手感（更慢/更亮…）隨時說。
   - 落下模式（falling.js）: 成對卡下落、點兩張相配消除、3 命落地扣命、成功依耗時記 SRS、漸快、Game Over+再玩一次；發卡用 queue.slice() 快照不動 session 佇列
   - 配對內容切換（settings.pairMode meaning/reading）: 讀音模式＝漢字↔假名讀音、只出漢字詞（word≠kana）、藏讀音；套用配對＋落下＋四選一（quiz 讀音模式：出漢字、四個假名讀音選一，pickDistractors 加 field 參數）
