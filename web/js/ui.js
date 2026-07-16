@@ -2,6 +2,7 @@ import { DEFAULT_SETTINGS } from './store.js';
 import { BGM_STYLES, normalizeStyle } from './bgm.js';
 import { currentStreak, dailySummary, isWeakCard } from './progress.js';
 import { ACHIEVEMENTS, questProgress } from './achievements.js';
+import { heatmapCells, intensity, levelMastery, totals } from './stats.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
@@ -123,6 +124,35 @@ function questItemsHtml(state) {
       <span class="quest-count">${q.value}/${q.goal}</span>
       <span class="quest-bar"><span style="width:${Math.round(q.value / q.goal * 100)}%"></span></span>
     </div>`).join('');
+}
+
+function statsHtml(state, dataByLevel) {
+  const cells = heatmapCells(state, { weeks: 20 });
+  const t = totals(state);
+  const hours = (t.seconds / 3600).toFixed(1);
+  const mastery = levelMastery(state, dataByLevel, state.settings.levels);
+  return `
+    <div class="stats-totals">
+      <span>累計 <b>${t.reviewed}</b> 題</span>
+      <span>學習 <b>${hours}</b> 小時</span>
+      <span>活躍 <b>${t.days}</b> 天</span>
+      <span>最佳連擊 <b>${t.bestCombo}</b></span>
+    </div>
+    <div class="heatmap" role="img" aria-label="近 20 週每日學習熱力圖">
+      ${cells.map(c => `<span class="hm hm-${intensity(c.count)}" title="${c.key}：${c.count} 題"></span>`).join('')}
+    </div>
+    ${mastery.length ? `<div class="mastery-list">
+      ${mastery.map(m => `
+        <div class="mastery">
+          <span class="mastery-lv">${m.lv.toUpperCase()}</span>
+          <span class="mastery-bar">
+            <span class="mastery-seen" style="width:${Math.round(m.seen / m.total * 100)}%"></span>
+            <span class="mastery-mature" style="width:${Math.round(m.mature / m.total * 100)}%"></span>
+          </span>
+          <span class="mastery-nums">${m.seen}/${m.total}<em>熟 ${m.mature}</em></span>
+        </div>`).join('')}
+      <div class="mastery-legend"><span class="lg lg-seen"></span>已學過　<span class="lg lg-mature"></span>已熟記（21 天+ 間隔）</div>
+    </div>` : ''}`;
 }
 
 /** Fixed HUD for the global cross-mode streak; appears from 2 in a row. */
@@ -273,6 +303,8 @@ export function renderChrome(root, state, getData, handlers) {
         <div class="settings-inner">
           <h2>今日任務</h2>
           <div class="quest-list">${questItemsHtml(state)}</div>
+          <h2>學習統計</h2>
+          <div class="stats-block">${statsHtml(state, dataByLevel)}</div>
           <h2>成就徽章</h2>
           <div class="badge-grid">
             ${ACHIEVEMENTS.map(a => {
