@@ -25,16 +25,18 @@ export function ttsAvailable() {
   return typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined';
 }
 
-function speak(text) {
+/** Shared Japanese TTS for every speech mode (listening/dictation/shadowing). */
+export function speakJa(text, rate = 0.9) {
   if (!ttsAvailable()) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ja-JP';
-  u.rate = 0.9;
+  u.rate = rate;
   const v = pickJaVoice(speechSynthesis.getVoices());
   if (v) u.voice = v;
   speechSynthesis.speak(u);
 }
+const speak = speakJa;
 
 /**
  * Mount a single listening question.

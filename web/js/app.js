@@ -18,6 +18,8 @@ import { mountListening } from './modes/listening.js';
 import { mountVocabCloze, makeCloze } from './modes/vocab-cloze.js';
 import { mountParticle, makeParticleCloze } from './modes/particle.js';
 import { mountHomophone, homophonesOf } from './modes/homophone.js';
+import { mountDictation, chunkSentence } from './modes/dictation.js';
+import { mountShadow } from './modes/shadow.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -185,6 +187,7 @@ function next() {
       ? mountGrammarOrder(stage, item, pool, onResult, gameAudio)
       : mountGrammarCloze(stage, item, pool, onResult, gameAudio);
   }
+  if (mode === 'shadow') return mountShadow(stage, pool);   // free listening practice, no queue/SRS
   if (mode === 'falling') return startFalling();
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
@@ -205,6 +208,7 @@ function next() {
       : mode === 'excloze' && makeCloze(card) ? mountVocabCloze(stage, card, pool, onResult, gameAudio)
       : mode === 'particle' && makeParticleCloze(card) ? mountParticle(stage, card, onResult, gameAudio)
       : mode === 'homophone' && homophonesOf(card, pool).length ? mountHomophone(stage, card, pool, onResult, gameAudio)
+      : mode === 'dictation' && chunkSentence(card.ex) ? mountDictation(stage, card, onResult, gameAudio)
       : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }

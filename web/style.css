@@ -898,6 +898,17 @@ button {
 .dict-ex-zh { font-size: 12px; color: var(--ink-dim); }
 .dict-practice { margin-top: 8px; font-size: 13px; padding: 8px 16px; }
 
+/* ---------------------------------------------------------- dictation + shadowing */
+
+.dictation-wrap .exam-order-line { min-height: 44px; }
+.shadow-jp { font-size: 19px; line-height: 2.1; margin: 14px 0 6px; }
+.shadow-jp rt { font-size: .5em; color: var(--ink-dim); }
+.shadow-zh { font-size: 13px; color: var(--ink-dim); margin-bottom: 8px; }
+.shadow-hidden { filter: blur(7px); user-select: none; }
+.shadow-word { font-size: 12px; color: var(--ink-dim); margin-bottom: 6px; }
+.shadow-speeds { justify-content: center; margin-top: 10px; }
+.shadow-count { font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim); margin-top: 10px; }
+
 /* ---------------------------------------------------------- homophone mode */
 
 .opt-word { display: block; font-size: 19px; font-family: var(--font-display); }

@@ -31,6 +31,8 @@ const MODES_BY_CONTENT = {
     { id: 'particle', label: '助詞' },
     { id: 'homophone', label: '同音' },
     { id: 'listen', label: '聽力' },
+    { id: 'dictation', label: '聽寫' },
+    { id: 'shadow', label: '跟讀' },
   ],
   reading: [],
 };
