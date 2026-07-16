@@ -12,6 +12,7 @@ import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
 import { mountListening } from './modes/listening.js';
+import { mountVocabCloze, makeCloze } from './modes/vocab-cloze.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -177,6 +178,9 @@ function next() {
     const card = byId(id);
     mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio)
       : mode === 'listen' ? mountListening(stage, card, pool, onResult, gameAudio, state.settings.pairMode)
+      // 例句挖空 needs the word locatable in its example; ~5–10% of cards
+      // aren't (reworded examples) — those get the plain quiz instead.
+      : mode === 'excloze' && makeCloze(card) ? mountVocabCloze(stage, card, pool, onResult, gameAudio)
       : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }

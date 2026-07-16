@@ -1,12 +1,12 @@
 // PWA service worker: precache the app shell, serve same-origin GET via
 // stale-while-revalidate. Cross-origin (Worker sync, GIS, Google Fonts) is
 // never intercepted — those always go to the network.
-const CACHE = 'jlpt-pwa-v14';   // bump on each release to refresh the shell
+const CACHE = 'jlpt-pwa-v15';   // bump on each release to refresh the shell
 const SHELL = [
   './', './index.html', './style.css', './config.js', './manifest.json',
   './js/app.js', './js/ui.js', './js/store.js', './js/session.js', './js/srs.js', './js/progress.js',
   './js/audio.js', './js/bgm.js', './js/combo.js', './js/achievements.js', './js/sync.js', './js/auth.js', './js/furigana.js',
-  './js/modes/match.js', './js/modes/typing.js', './js/modes/quiz.js', './js/modes/listening.js',
+  './js/modes/match.js', './js/modes/typing.js', './js/modes/quiz.js', './js/modes/listening.js', './js/modes/vocab-cloze.js',
   './js/modes/falling.js', './js/modes/grammar-cloze.js', './js/modes/grammar-order.js',
   './js/modes/reading.js',
   './icons/icon-192.png', './icons/icon-512.png',

@@ -769,6 +769,12 @@ button {
 
 .type-row { margin-bottom: 10px; }
 
+/* ---------------------------------------------------------- vocab example cloze */
+
+.excloze-wrap .cloze-sentence { margin-bottom: 10px; }
+.excloze-zh { font-size: 13px; color: var(--ink-dim); margin-bottom: 16px; }
+.excloze-wrap .listen-reveal { margin-top: 2px; }
+
 /* ---------------------------------------------------------- listening mode */
 
 .listen-wrap .prompt { align-items: center; }

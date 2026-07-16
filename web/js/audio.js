@@ -54,6 +54,12 @@ export function makeAudio(enabled) {
       wrong:   () => note(160, now(), { type: 'sawtooth', dur: 0.14, gain: 0.12 }),
       clear:   () => seq([523, 659, 784], 0.07, { type: 'triangle', dur: 0.12, gain: 0.14 }),
     },
+    // 例句挖空: plucked-string confirm, like a koto note settling into place.
+    excloze: {
+      correct: (combo) => { const k = lift(combo); note(494 * k, now(), { type: 'triangle', dur: 0.16, gain: 0.14, glideTo: 494 * k * 0.985 }); note(988 * k, now() + 0.015, { type: 'sine', dur: 0.08, gain: 0.04 }); },
+      wrong:   () => note(175, now(), { type: 'sine', dur: 0.16, gain: 0.10, glideTo: 140 }),
+      clear:   () => seq([494, 587, 740], 0.08, { type: 'triangle', dur: 0.13, gain: 0.12 }),
+    },
     // 聽力: gentle bell-like confirm (stays out of the TTS voice's way).
     listen: {
       correct: (combo) => { const k = lift(combo); note(784 * k, now(), { type: 'sine', dur: 0.12, gain: 0.12 }); note(1568 * k, now() + 0.02, { type: 'sine', dur: 0.10, gain: 0.04 }); },
@@ -87,4 +93,4 @@ export function makeAudio(enabled) {
 
 // The modes that have a distinct SFX voice (reading has none). Exported so a
 // test can assert every playable mode is covered.
-export const VOICE_IDS = ['match', 'typing', 'quiz', 'listen', 'falling', 'cloze', 'order'];
+export const VOICE_IDS = ['match', 'typing', 'quiz', 'excloze', 'listen', 'falling', 'cloze', 'order'];
