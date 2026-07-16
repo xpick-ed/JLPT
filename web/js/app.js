@@ -22,6 +22,7 @@ import { mountDictation, chunkSentence } from './modes/dictation.js';
 import { mountShadow } from './modes/shadow.js';
 import { mountConjug } from './modes/conjug.js';
 import { isConjugatable } from './conjugate.js';
+import { mountStrokes } from './modes/strokes.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -192,6 +193,7 @@ function next() {
       : mountGrammarCloze(stage, item, pool, onResult, gameAudio);
   }
   if (mode === 'shadow') return mountShadow(stage, pool);   // free listening practice, no queue/SRS
+  if (mode === 'strokes') return mountStrokes(stage, pool, state.settings.levels, gameAudio);   // free tracing, no SRS
   if (mode === 'falling') return startFalling();
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);

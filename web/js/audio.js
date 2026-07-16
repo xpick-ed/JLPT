@@ -72,6 +72,12 @@ export function makeAudio(enabled) {
       wrong:   () => note(190, now(), { type: 'sine', dur: 0.17, gain: 0.10, glideTo: 145 }),
       clear:   () => seq([587, 740, 880], 0.08, { type: 'sine', dur: 0.12, gain: 0.12 }),
     },
+    // 筆順: soft brush swish on a completed character.
+    strokes: {
+      correct: () => note(660, now(), { type: 'sine', dur: 0.16, gain: 0.11, glideTo: 990 }),
+      wrong:   () => note(240, now(), { type: 'sine', dur: 0.08, gain: 0.07 }),
+      clear:   () => seq([660, 880], 0.08, { type: 'sine', dur: 0.12, gain: 0.11 }),
+    },
     // 變位: mechanical click-clack confirm, like gears meshing.
     conjug: {
       correct: (combo) => { const k = lift(combo); note(740 * k, now(), { type: 'square', dur: 0.04, gain: 0.05 }); note(988 * k, now() + 0.05, { type: 'triangle', dur: 0.12, gain: 0.13 }); },
@@ -117,4 +123,4 @@ export function makeAudio(enabled) {
 
 // The modes that have a distinct SFX voice (reading has none). Exported so a
 // test can assert every playable mode is covered.
-export const VOICE_IDS = ['match', 'typing', 'quiz', 'excloze', 'particle', 'homophone', 'listen', 'dictation', 'conjug', 'falling', 'cloze', 'order'];
+export const VOICE_IDS = ['match', 'typing', 'quiz', 'excloze', 'particle', 'homophone', 'listen', 'dictation', 'conjug', 'strokes', 'falling', 'cloze', 'order'];

@@ -35,6 +35,7 @@ const MODES_BY_CONTENT = {
     { id: 'dictation', label: '聽寫' },
     { id: 'shadow', label: '跟讀' },
     { id: 'conjug', label: '變位' },
+    { id: 'strokes', label: '筆順' },
   ],
   reading: [],
 };
