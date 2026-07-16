@@ -16,6 +16,7 @@ const MODES_BY_CONTENT = {
     { id: 'match', label: '配對' },
     { id: 'typing', label: '打字' },
     { id: 'quiz', label: '四選一' },
+    { id: 'listen', label: '聽力' },
     { id: 'falling', label: '落下' },
   ],
   grammar: [

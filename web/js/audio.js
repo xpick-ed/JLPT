@@ -54,6 +54,12 @@ export function makeAudio(enabled) {
       wrong:   () => note(160, now(), { type: 'sawtooth', dur: 0.14, gain: 0.12 }),
       clear:   () => seq([523, 659, 784], 0.07, { type: 'triangle', dur: 0.12, gain: 0.14 }),
     },
+    // 聽力: gentle bell-like confirm (stays out of the TTS voice's way).
+    listen: {
+      correct: (combo) => { const k = lift(combo); note(784 * k, now(), { type: 'sine', dur: 0.12, gain: 0.12 }); note(1568 * k, now() + 0.02, { type: 'sine', dur: 0.10, gain: 0.04 }); },
+      wrong:   () => note(220, now(), { type: 'sine', dur: 0.18, gain: 0.10, glideTo: 165 }),
+      clear:   () => seq([784, 988, 1175], 0.08, { type: 'sine', dur: 0.12, gain: 0.11 }),
+    },
     // 文法四選一: warm woody marimba confirm; muted low on wrong.
     cloze: {
       correct: (combo) => { const k = lift(combo); note(587 * k, now(), { type: 'triangle', dur: 0.14, gain: 0.14 }); note(1175 * k, now() + 0.02, { type: 'sine', dur: 0.09, gain: 0.05 }); },
@@ -81,4 +87,4 @@ export function makeAudio(enabled) {
 
 // The modes that have a distinct SFX voice (reading has none). Exported so a
 // test can assert every playable mode is covered.
-export const VOICE_IDS = ['match', 'typing', 'quiz', 'falling', 'cloze', 'order'];
+export const VOICE_IDS = ['match', 'typing', 'quiz', 'listen', 'falling', 'cloze', 'order'];

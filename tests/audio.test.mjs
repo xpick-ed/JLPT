@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeAudio, VOICE_IDS } from '../web/js/audio.js';
 
-test('VOICE_IDS covers exactly the six playable modes', () => {
-  assert.deepEqual([...VOICE_IDS].sort(), ['cloze', 'falling', 'match', 'order', 'quiz', 'typing']);
+test('VOICE_IDS covers exactly the seven playable modes', () => {
+  assert.deepEqual([...VOICE_IDS].sort(), ['cloze', 'falling', 'listen', 'match', 'order', 'quiz', 'typing']);
 });
 
 test('makeAudio exposes the event + control surface', () => {

@@ -11,6 +11,7 @@ import { isWeakCard, recordActivity, dailySummary } from './progress.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
 import { mountQuiz } from './modes/quiz.js';
+import { mountListening } from './modes/listening.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -154,6 +155,7 @@ function onResult(id, grade) {
 function next() {
   const stage = document.getElementById('stage');
   audio.setMode(mode);                 // each mode plays its own SFX voice
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();   // stop any listening-mode TTS
   if (state.settings.content === 'reading') return mountReading(stage);
   if (state.settings.content === 'grammar') {
     const id = queue.shift();
@@ -173,7 +175,9 @@ function next() {
     const id = queue.shift();
     if (!id) return renderDone(stage);
     const card = byId(id);
-    mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio) : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
+    mode === 'typing' ? mountTyping(stage, card, onResult, gameAudio)
+      : mode === 'listen' ? mountListening(stage, card, pool, onResult, gameAudio, state.settings.pairMode)
+      : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
   }
 }
 function makeFallingSupply() {

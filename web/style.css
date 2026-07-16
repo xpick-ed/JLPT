@@ -768,6 +768,27 @@ button {
 .zh-hint { font-size: 13px; color: var(--sumi-strong); margin-bottom: 18px; opacity: .85; }
 
 .type-row { margin-bottom: 10px; }
+
+/* ---------------------------------------------------------- listening mode */
+
+.listen-wrap .prompt { align-items: center; }
+.listen-play {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  margin: 0 auto 4px;
+  font-size: 30px;
+  display: grid;
+  place-items: center;
+  background: var(--shu);
+  color: var(--shu-ink);
+  box-shadow: 0 6px 20px var(--shu-glow);
+  transition: transform .15s ease;
+}
+.listen-play:hover { transform: scale(1.05); }
+.listen-play:active { transform: scale(.93); }
+.listen-hint { font-size: 13px; color: var(--ink-dim); }
+.listen-reveal { font-size: 15px; color: var(--ink); margin-bottom: 14px; }
 .type-input {
   width: 100%;
   font-family: var(--font-mono);
