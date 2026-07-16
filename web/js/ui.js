@@ -1,6 +1,7 @@
 import { DEFAULT_SETTINGS } from './store.js';
 import { BGM_STYLES, normalizeStyle } from './bgm.js';
 import { currentStreak, dailySummary, isWeakCard } from './progress.js';
+import { ACHIEVEMENTS, questProgress } from './achievements.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
@@ -26,6 +27,7 @@ const MODES_BY_CONTENT = {
 
 let currentMode = 'match';
 let settingsOpen = false;
+let trophyOpen = false;
 
 // Theme toggle cycles system → dark → light → system.
 const THEME_ORDER = ['system', 'dark', 'light'];
@@ -93,6 +95,32 @@ export function confetti(root) {
     layer.appendChild(c);
     setTimeout(() => c.remove(), 2800);
   }
+}
+
+/** Transient top-center notification (achievements, quest completions). */
+export function showToast(text) {
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = text;
+  stack.appendChild(t);
+  setTimeout(() => t.classList.add('toast-out'), 2600);
+  setTimeout(() => t.remove(), 3100);
+}
+
+function questItemsHtml(state) {
+  return questProgress(state).map(q => `
+    <div class="quest${q.done ? ' quest-done' : ''}">
+      <span class="quest-check">${q.done ? '✓' : '○'}</span>
+      <span class="quest-title">${esc(q.title)}</span>
+      <span class="quest-count">${q.value}/${q.goal}</span>
+      <span class="quest-bar"><span style="width:${Math.round(q.value / q.goal * 100)}%"></span></span>
+    </div>`).join('');
 }
 
 /** Fixed HUD for the global cross-mode streak; appears from 2 in a row. */
@@ -174,6 +202,8 @@ export function updateStudyStats(root, state, getData) {
   if (meter) meter.setAttribute('aria-valuenow', String(progress));
   const weakBtn = root.querySelector('.weak-review-btn');
   if (weakBtn) weakBtn.disabled = weak === 0;
+  const questBox = root.querySelector('.quest-list');
+  if (questBox) questBox.innerHTML = questItemsHtml(state);   // live quest progress while the panel is open
 }
 
 export function renderChrome(root, state, getData, handlers) {
@@ -204,6 +234,7 @@ export function renderChrome(root, state, getData, handlers) {
             ${modes.map(m => `<button type="button" class="tab${m.id === currentMode ? ' active' : ''}" data-mode="${m.id}" role="tab" aria-selected="${m.id === currentMode}">${m.label}</button>`).join('')}
           </nav>`}
           <div class="chrome-actions">
+            <button type="button" class="trophy-btn" aria-label="任務與成就" aria-expanded="${trophyOpen}">🏅</button>
             <button type="button" class="theme-btn" aria-label="切換主題" title="${THEME_META[s.theme]?.title || THEME_META.system.title}">${THEME_META[s.theme]?.icon || THEME_META.system.icon}</button>
             <button type="button" class="gear-btn" aria-label="設定" aria-expanded="${settingsOpen}">⚙</button>
           </div>
@@ -235,6 +266,25 @@ export function renderChrome(root, state, getData, handlers) {
           <span class="stat stat-new">新內容 <b data-stat="fresh">${fresh}</b></span>
           <button type="button" class="weak-review-btn" ${weak ? '' : 'disabled'}>弱點複習 <b data-stat="weak">${weak}</b></button>
         </div>`}
+      </div>
+      <div class="settings-panel trophy-panel"${trophyOpen ? '' : ' hidden'}>
+        <div class="settings-inner">
+          <h2>今日任務</h2>
+          <div class="quest-list">${questItemsHtml(state)}</div>
+          <h2>成就徽章</h2>
+          <div class="badge-grid">
+            ${ACHIEVEMENTS.map(a => {
+              const ts = (state.achievements || {})[a.id];
+              return `<div class="badge${ts ? ' badge-earned' : ''}" title="${esc(a.desc)}${ts ? `　${new Date(ts).toLocaleDateString()} 獲得` : '（未解鎖）'}">
+                <span class="badge-icon">${a.icon}</span>
+                <span class="badge-title">${esc(a.title)}</span>
+              </div>`;
+            }).join('')}
+          </div>
+          <div class="settings-actions">
+            <button type="button" class="btn-primary" id="trophy-close">完成</button>
+          </div>
+        </div>
       </div>
       <div class="settings-panel"${settingsOpen ? '' : ' hidden'}>
         <div class="settings-inner">
@@ -297,6 +347,18 @@ export function renderChrome(root, state, getData, handlers) {
 
     root.querySelector('.gear-btn').addEventListener('click', () => {
       settingsOpen = !settingsOpen;
+      if (settingsOpen) trophyOpen = false;
+      render();
+    });
+
+    root.querySelector('.trophy-btn').addEventListener('click', () => {
+      trophyOpen = !trophyOpen;
+      if (trophyOpen) settingsOpen = false;
+      render();
+    });
+    const trophyClose = root.querySelector('#trophy-close');
+    if (trophyClose) trophyClose.addEventListener('click', () => {
+      trophyOpen = false;
       render();
     });
 

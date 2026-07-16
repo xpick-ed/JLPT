@@ -5,7 +5,8 @@ import { getSession, setSession, clearSession, initGoogle, renderButton, getOwne
 import { makeAudio } from './audio.js';
 import { makeBgm, normalizeStyle } from './bgm.js';
 import { makeCombo, applyAnswer } from './combo.js';
-import { renderChrome, updateStudyStats, updateComboHud, confetti } from './ui.js';
+import { ACHIEVEMENTS, evaluateAchievements, questProgress } from './achievements.js';
+import { renderChrome, updateStudyStats, updateComboHud, confetti, showToast } from './ui.js';
 import { isWeakCard, recordActivity, dailySummary } from './progress.js';
 import { mountMatch } from './modes/match.js';
 import { mountTyping } from './modes/typing.js';
@@ -110,7 +111,27 @@ function onResult(id, grade) {
   if (newRecord) recordCelebrated = true;
   if (comboState.combo > (graded.best?.combo || 0)) graded.best = { ...(graded.best || {}), combo: comboState.combo, updated: now };
   const reviewedBefore = dailySummary(state).reviewed;
-  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, points: comboState.gained, now }));
+  const questsBefore = questProgress(state, now);
+  Object.assign(state, recordActivity(graded, { deviceId, content: state.settings.content, grade, seconds, points: comboState.gained, combo: comboState.combo, now }));
+  // Newly earned badges: toast + celebrate, then persist with everything else.
+  const { earned, newly } = evaluateAchievements(state, now);
+  if (newly.length) {
+    state.achievements = earned;
+    state.updated = now;
+    for (const id of newly) {
+      const a = ACHIEVEMENTS.find(x => x.id === id);
+      if (a) showToast(`${a.icon} 獲得成就「${a.title}」`);
+    }
+    confetti(document.getElementById('stage'));
+  }
+  // Quest completions this answer: toast each; finishing all three celebrates.
+  const questsAfter = questProgress(state, now);
+  const doneNow = questsAfter.filter(q => q.done && !questsBefore.find(p => p.id === q.id)?.done);
+  for (const q of doneNow) showToast(`✅ 任務完成「${q.title}」`);
+  if (doneNow.length && questsAfter.every(q => q.done)) {
+    showToast('🎊 今日任務全部完成！');
+    confetti(document.getElementById('stage'));
+  }
   persist();
   updateStudyStats(document.getElementById('chrome'), state, activeData);
   updateComboHud(comboState, { newRecord, tierUp: correct && comboState.multiplier > prevMultiplier });

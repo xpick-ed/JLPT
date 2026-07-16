@@ -10,12 +10,12 @@ export function dayKey(now = Date.now()) {
 }
 
 function emptyBucket() {
-  return { reviewed: 0, correct: 0, seconds: 0, vocab: 0, grammar: 0, score: 0, updated: 0 };
+  return { reviewed: 0, correct: 0, seconds: 0, vocab: 0, grammar: 0, score: 0, combo: 0, updated: 0 };
 }
 
 // Activity is kept per device so sync can merge counters without repeatedly
 // double-counting them. Each device owns and replaces only its own bucket.
-export function recordActivity(state, { deviceId, content, grade, seconds = 0, points = 0, now = Date.now() }) {
+export function recordActivity(state, { deviceId, content, grade, seconds = 0, points = 0, combo = 0, now = Date.now() }) {
   const key = dayKey(now);
   const daily = { ...(state.daily || {}) };
   const byDevice = { ...(daily[key] || {}) };
@@ -28,6 +28,7 @@ export function recordActivity(state, { deviceId, content, grade, seconds = 0, p
     seconds: prev.seconds + Math.max(0, Math.min(120, Math.round(seconds))),
     [kind]: prev[kind] + 1,
     score: prev.score + Math.max(0, Math.round(points)),
+    combo: Math.max(prev.combo, combo),   // best streak reached today on this device
     updated: now,
   };
   daily[key] = byDevice;
@@ -60,6 +61,7 @@ export function dailySummary(state, key = dayKey()) {
     total.vocab += bucket.vocab || 0;
     total.grammar += bucket.grammar || 0;
     total.score += bucket.score || 0;
+    total.combo = Math.max(total.combo, bucket.combo || 0);
     total.updated = Math.max(total.updated, bucket.updated || 0);
   }
   return total;

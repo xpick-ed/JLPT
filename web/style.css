@@ -226,7 +226,7 @@ button {
 .tab:not(.active):hover { color: var(--ink); background: var(--surface-strong); }
 .tab:active { transform: scale(0.95); }
 
-.gear-btn, .theme-btn {
+.gear-btn, .theme-btn, .trophy-btn {
   width: 36px;
   height: 36px;
   border-radius: 999px;
@@ -237,7 +237,7 @@ button {
   place-items: center;
   transition: transform .25s ease, background .18s ease, border-color .18s ease;
 }
-.gear-btn:hover, .theme-btn:hover { background: var(--surface-strong); border-color: var(--border-strong); }
+.gear-btn:hover, .theme-btn:hover, .trophy-btn:hover { background: var(--surface-strong); border-color: var(--border-strong); }
 .gear-btn:hover { transform: rotate(35deg); }
 .theme-btn:active { transform: scale(0.92); }
 
@@ -1055,6 +1055,88 @@ button {
   animation-fill-mode: forwards;
   pointer-events: none;
 }
+
+/* ---------------------------------------------------------- toasts / quests / badges */
+
+#toast-stack {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 80;
+  pointer-events: none;
+}
+.toast {
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  color: var(--ink);
+  animation: popIn .3s cubic-bezier(.2, 1.4, .4, 1);
+}
+.toast-out { opacity: 0; transition: opacity .45s ease; }
+
+.trophy-btn { font-size: 16px; }
+
+.quest-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.quest {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  grid-template-areas: "check title count" "check bar bar";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 5px;
+}
+.quest-check { grid-area: check; color: var(--ink-dim); }
+.quest-done .quest-check { color: var(--shu); font-weight: 700; }
+.quest-title { grid-area: title; font-size: 14px; color: var(--ink); }
+.quest-done .quest-title { color: var(--ink-dim); text-decoration: line-through; }
+.quest-count { grid-area: count; font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); }
+.quest-bar {
+  grid-area: bar;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  overflow: hidden;
+}
+.quest-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--shu), var(--kin));
+  transition: width .3s ease;
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 6px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  opacity: .38;
+  filter: grayscale(1);
+}
+.badge-earned { opacity: 1; filter: none; border-color: var(--kin); box-shadow: 0 0 12px var(--shu-glow); }
+.badge-icon { font-size: 26px; line-height: 1; }
+.badge-title { font-size: 11px; color: var(--ink-dim); text-align: center; }
+.badge-earned .badge-title { color: var(--ink); }
 
 /* ---------------------------------------------------------- combo HUD (global streak) */
 
