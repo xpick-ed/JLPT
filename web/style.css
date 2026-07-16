@@ -1286,6 +1286,29 @@ button {
   transition: width .3s ease;
 }
 
+.coach-block { margin-bottom: 20px; }
+.coach-countdown { font-size: 15px; color: var(--ink); margin-bottom: 12px; }
+.coach-countdown b { color: var(--shu); }
+.coach-days { font-family: var(--font-mono); font-size: 22px; }
+.coach-unset { color: var(--ink-dim); font-size: 13px; }
+.coach-menu { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.coach-menu .quest { grid-template-areas: "check title count"; row-gap: 0; }
+.coach-menu .btn-ghost { font-size: 12px; padding: 4px 10px; }
+.coach-forecast {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 36px;
+}
+.fc-bar {
+  flex: 1;
+  min-width: 3px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, var(--kin), var(--shu));
+  opacity: .8;
+}
+.coach-forecast-label { font-size: 11px; color: var(--ink-dim); margin-top: 4px; }
+
 .stats-block { margin-bottom: 20px; }
 .stats-totals {
   display: flex;

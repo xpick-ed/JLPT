@@ -3,6 +3,7 @@ import { BGM_STYLES, normalizeStyle } from './bgm.js';
 import { currentStreak, dailySummary, isWeakCard } from './progress.js';
 import { ACHIEVEMENTS, questProgress } from './achievements.js';
 import { heatmapCells, intensity, levelMastery, totals } from './stats.js';
+import { daysUntil, dueForecast, todayMenu, mockExamNudge } from './coach.js';
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
@@ -137,6 +138,35 @@ function questItemsHtml(state) {
       <span class="quest-count">${q.value}/${q.goal}</span>
       <span class="quest-bar"><span style="width:${Math.round(q.value / q.goal * 100)}%"></span></span>
     </div>`).join('');
+}
+
+function coachHtml(state, stats) {
+  const s = state.settings;
+  const days = daysUntil(s.examDate);
+  const menu = todayMenu(state, stats);
+  const forecast = dueForecast(state.cards);
+  const maxLoad = Math.max(1, ...forecast.map(f => f.count));
+  const nudge = mockExamNudge(state.exams);
+  return `
+    ${days === null
+      ? '<div class="coach-countdown coach-unset">在設定裡填上考試日期，開始倒數 →</div>'
+      : days >= 0
+        ? `<div class="coach-countdown">距 <b>${(s.examLevel || '').toUpperCase() || 'JLPT'}</b> 考試還有 <b class="coach-days">${days}</b> 天</div>`
+        : '<div class="coach-countdown">考試日期已過，記得更新目標！</div>'}
+    <div class="coach-menu">
+      ${menu.map(m => `
+        <div class="quest${m.done ? ' quest-done' : ''}">
+          <span class="quest-check">${m.done ? '✓' : '○'}</span>
+          <span class="quest-title">${m.label}</span>
+          ${m.target ? `<span class="quest-count">${Math.min(m.value, m.target)}/${m.target}</span>` : ''}
+          ${m.kind === 'weak' ? '<button type="button" class="btn-ghost coach-weak-btn">去複習</button>' : ''}
+        </div>`).join('')}
+      ${nudge ? '<div class="quest"><span class="quest-check">○</span><span class="quest-title">本週還沒做模擬考</span><button type="button" class="btn-ghost coach-exam-btn">開始</button></div>' : ''}
+    </div>
+    <div class="coach-forecast" aria-label="未來 30 天複習量預報">
+      ${forecast.map(f => `<span class="fc-bar" style="height:${Math.max(2, Math.round(f.count / maxLoad * 34))}px" title="${f.key}：${f.count} 題"></span>`).join('')}
+    </div>
+    <div class="coach-forecast-label">未來 30 天到期複習量（最高 ${maxLoad === 1 ? 0 : maxLoad} 題/日）</div>`;
 }
 
 function statsHtml(state, dataByLevel) {
@@ -314,6 +344,8 @@ export function renderChrome(root, state, getData, handlers) {
       </div>
       <div class="settings-panel trophy-panel"${trophyOpen ? '' : ' hidden'}>
         <div class="settings-inner">
+          <h2>備考教練</h2>
+          <div class="coach-block">${coachHtml(state, { due, fresh, weak, goal })}</div>
           <h2>今日任務</h2>
           <div class="quest-list">${questItemsHtml(state)}</div>
           <h2>學習統計</h2>
@@ -357,6 +389,17 @@ export function renderChrome(root, state, getData, handlers) {
           <label class="field">
             <span>每日學習目標（題）</span>
             <input type="number" id="set-dailygoal" min="1" max="500" value="${s.dailyGoal || DEFAULT_SETTINGS.dailyGoal}">
+          </label>
+          <label class="field">
+            <span>考試日期（教練倒數用）</span>
+            <input type="date" id="set-examdate" value="${esc(s.examDate || '')}">
+          </label>
+          <label class="field">
+            <span>目標級別</span>
+            <select id="set-examlevel">
+              <option value="">未定</option>
+              ${LEVELS.map(lv => `<option value="${lv}"${s.examLevel === lv ? ' selected' : ''}>${lv.toUpperCase()}</option>`).join('')}
+            </select>
           </label>
           <div class="field">
             <span>帳號</span>
@@ -434,6 +477,18 @@ export function renderChrome(root, state, getData, handlers) {
       render();
       if (handlers.onMockExam) handlers.onMockExam();
     });
+    const coachWeak = root.querySelector('.coach-weak-btn');
+    if (coachWeak) coachWeak.addEventListener('click', () => {
+      trophyOpen = false;
+      render();
+      if (handlers.onWeakReview) handlers.onWeakReview();
+    });
+    const coachExam = root.querySelector('.coach-exam-btn');
+    if (coachExam) coachExam.addEventListener('click', () => {
+      trophyOpen = false;
+      render();
+      if (handlers.onMockExam) handlers.onMockExam();
+    });
 
     root.querySelector('.theme-btn').addEventListener('click', () => {
       const next = THEME_ORDER[(THEME_ORDER.indexOf(s.theme) + 1) % THEME_ORDER.length];
@@ -465,6 +520,10 @@ export function renderChrome(root, state, getData, handlers) {
       const v = Math.max(1, parseInt(dailyGoal.value, 10) || DEFAULT_SETTINGS.dailyGoal);
       handlers.onSettingsChange({ dailyGoal: v });
     });
+    const examDate = root.querySelector('#set-examdate');
+    if (examDate) examDate.addEventListener('change', () => handlers.onSettingsChange({ examDate: examDate.value }));
+    const examLevel = root.querySelector('#set-examlevel');
+    if (examLevel) examLevel.addEventListener('change', () => handlers.onSettingsChange({ examLevel: examLevel.value }));
     const weakReview = root.querySelector('.weak-review-btn');
     if (weakReview) weakReview.addEventListener('click', async () => {
       // Weak review is a finite study session; leave the endless falling arcade
