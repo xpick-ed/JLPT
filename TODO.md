@@ -50,7 +50,7 @@
   - Google 登入 + 每人同步 已上線（取代 passphrase）: GIS 登入→Worker /session 用 tokeninfo 驗 ID token→發 60 天 session→同步帶 Bearer，資料存 user:<sub>。worker/index.js（validateClaims + /session//data//logout，CORS 鎖 ALLOWED_ORIGIN）+ web/js/auth.js（session/owner 存取 + GIS glue）+ sync.js Bearer + app.js（onCredential/signOut/syncNow）+ ui 設定帳號區。本地優先不變、登入為選配。opus 終審＋2 輪加固：帳號感知同步（applySync，換帳號不混、有純函式回歸測試防漏）、signOut 打 /logout、name/email escape。59/59 測試、Playwright 驗過、0 error。spec/plan 於 docs/superpowers/2026-07-13-*。
     - Google Client ID、Worker URL、KV 與 allowed origin 已填入 repo；仍應依 docs/deploy/google-login-setup.md 在正式站做一次雙裝置登入 smoke test。
   - PWA（可安裝 + 離線）已上線: web/manifest.json（standalone、相對路徑）+ build_icons.py 生朱紅「字」印章 icon（192/512/maskable/apple-touch，commit 進 web/icons）+ web/sw.js（precache app shell + 同源 GET stale-while-revalidate；跨源 Worker 同步/GIS/字型一律走網路不快取）+ index.html manifest/apple-touch/iOS metas + app.js 註冊 SW。手機可「加到主畫面」全螢幕、離線可玩。61/61 測試、Playwright 驗過離線重載仍渲染、0 error（一次 GIS 第三方腳本 transient 錯誤、clean rerun 無、不影響功能）。spec/plan 於 docs/superpowers/2026-07-14-*。改版記得 bump web/sw.js 的 CACHE。
-  - 部署待確認: GitHub Pages workflow 範本仍在 docs/deploy/pages.yml，尚未放入 `.github/workflows/`；正式站 Google 登入與雙裝置同步需人工 smoke test。
+  - 部署狀態（2026-07-17 查證）: 正式站 **已上線** https://xpick-ed.github.io/JLPT/web/ ，走 Pages「deploy from branch」（main 直出，push 即部署，不需要 docs/deploy/pages.yml 的 workflow）；Worker CORS 已正確允許該 origin。唯一未人工驗證的是正式站上實際點 Google 登入＋雙裝置同步（Google Cloud Console 的授權 origin 是否含 xpick-ed.github.io 只能實測確認）。
 - 素材: build_vocab_pdf.py / build_grammar_pdf.py（level 參數 n5-n1）、data/(grammar_)<lv>_part*.json、<LV>單字書/文法句型書.pdf、JLPT_N5-N1_*.csv（單字普通+Anki、文法 Anki）
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
 - Relevant files: STUDY_PLAN.md, N5/N4/N3單字書.pdf, build_vocab_pdf.py, data/n[345]_part*.json
