@@ -51,6 +51,7 @@
     - 小事: renderDone 空池文案寫死「沒有單字」，文法模式下也顯示單字字樣（可改）。
   - 排列重組（grammar order / 並べ替え）已上線: 文法第二模式，deck 概念（vocab/grammar/grammar_order 各自題庫）。點選 4 片段排序、填滿自動判定整句、答完顯示完整句＋解說＋下一題。web/js/modes/grammar-order.js（gradeOrder/checkOrder）+ build_grammar_order.py + furiganaToRuby 抽成 web/js/furigana.js。opus 終審 Ready、修了 stale-chrome deck binding（renderChrome 改吃 getter）。
     - 題庫已生五級全量共 506 題（N5 47／N4 90／N3 118／N2 153／N1 98），data/grammar_order_items/<lv>.json → web/data/grammar_order_<lv>.json。generate→unique-order verify workflow（46 chunk、92 agent）；verify 強制修正雙解後保留剛好 4 片段（本輪 0 掉在非4片段）；重建檢查丟掉無法還原原句者（N1 最多）。N5 良率低＝短句難切出唯一解 4 段。
+  - 智慧閱讀器（2026-07-17）已上線: 閱讀分頁新增貼文閱讀器——貼任意日文，用全題庫 6,729 詞做最長匹配標註（含動詞詞幹匹配變位形；純平假名詞不索引防誤標），已學/未學雙色、點詞彈釋義卡（含聲調）、「＋加入學習」存入 state.wordbook（跨裝置 union 合併、上限 500）。生詞本卡無視級別篩選優先排入新卡佇列、boot 自動載其級別題庫、學過即自動移出。文字僅在瀏覽器內處理不上傳。reader.js 純函式有測試；已實測閉環（N3-only 選擇下讀到的 N5 詞成為下一張新卡）。
   - 每日閱讀（C，改版為連結啟動器）已上線: 頂部第三個切換「閱讀」，選它時隱藏遊戲 chrome，顯示 6 個外部日語閱讀來源卡（NHK Web Easy／Watanoc／MATCHA／福娘童話集／NHK 一般／青空文庫，涵蓋 N5–N1），開新分頁 rel=noopener。web/js/modes/reading.js（SOURCES + mountReading）；閱讀走 next()/onContentChange guard 繞過 deck。純連結、無題庫/後端/理解題。Playwright 驗過、0 error、40/40。
   - 每模式專屬音效已上線: audio.js makeAudio 改成「同事件不同 voice」——每個模式各有音色/手勢的 hit()/wrong()/clear()（配對＝圓潤 pop、打字＝打字機 tick+ding、四選一＝上行雙音、落下＝街機 zap、文法四選一＝木質 marimba、排列重組＝完成和弦），call site 不動，app.js next() 呼叫 audio.setMode(mode) 依當前模式切換。VOICE_IDS 匯出＋單元測試（68/68）；Playwright 實機驗過六模式 correct 0.13–0.20／wrong 0.07–0.11 皆可聞、0 error。sw.js CACHE 升 v9。
   - 三大支柱全到位: 單字（4 模式）、文法（四選一 623／排列重組 506）、閱讀（每日連結）。
