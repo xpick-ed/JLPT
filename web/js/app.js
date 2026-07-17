@@ -23,6 +23,7 @@ import { mountShadow } from './modes/shadow.js';
 import { mountConjug } from './modes/conjug.js';
 import { isConjugatable } from './conjugate.js';
 import { mountStrokes } from './modes/strokes.js';
+import { mergeWordbook } from './reader.js';
 import { mountFalling } from './modes/falling.js';
 import { mountGrammarCloze } from './modes/grammar-cloze.js';
 import { mountGrammarOrder } from './modes/grammar-order.js';
@@ -100,7 +101,17 @@ function rebuildPool() {
       || state.settings.pairMode !== 'reading' || c.word !== c.kana);
   // 變位 drills verbs only — a mostly-noun queue would just fall back to quiz.
   if (state.settings.content === 'drill' && mode === 'conjug') pool = pool.filter(isConjugatable);
-  queue = buildQueue(state, pool.map(c => c.id), Date.now());
+  // 生詞本 (from the reader): unlearned saved words join the pool regardless of
+  // level filters and jump the new-card queue.
+  let wbCards = [];
+  if (activeDeck() === 'vocab') {
+    wbCards = (state.wordbook || [])
+      .map(w => (data.vocab[w.lv] || []).find(c => c.id === w.id))
+      .filter(c => c && !(state.cards[c.id]?.reps > 0) && !pool.some(p => p.id === c.id));
+    if (state.settings.content === 'drill' && mode === 'conjug') wbCards = wbCards.filter(isConjugatable);
+    pool = pool.concat(wbCards);
+  }
+  queue = buildQueue(state, [...wbCards.map(c => c.id), ...pool.filter(c => !wbCards.includes(c)).map(c => c.id)], Date.now());
   practiceKind = null;
 }
 const byId = id => pool.find(c => c.id === id);
@@ -173,7 +184,19 @@ function next() {
   const stage = document.getElementById('stage');
   audio.setMode(mode);                 // each mode plays its own SFX voice
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();   // stop any listening-mode TTS
-  if (state.settings.content === 'reading') return mountReading(stage);
+  if (state.settings.content === 'reading') {
+    return mountReading(stage, {
+      loadAllVocab: async () => { await loadLevels('vocab', ['n5', 'n4', 'n3', 'n2', 'n1']); return data.vocab; },
+      isKnown: id => !!(state.cards[id] && state.cards[id].reps > 0),
+      inWordbook: id => (state.wordbook || []).some(w => w.id === id),
+      onAddWord: (card) => {
+        state.wordbook = mergeWordbook(state.wordbook, [{ id: card.id, lv: card.level.toLowerCase(), at: Date.now() }]);
+        state.updated = Date.now();
+        persist();
+        showToast(`＋「${card.word}」已加入學習佇列`);
+      },
+    });
+  }
   if (state.settings.content === 'grammar' && course) updateCourseHud();
   if (state.settings.content === 'grammar') {
     if (mode === 'dict') {
@@ -584,6 +607,11 @@ function renderOnboarding(stage) {
   initGoogle(GOOGLE_CLIENT_ID, onCredential);   // non-blocking; sets up the sign-in callback
   if (WORKER_URL && getSession()) await syncNow();
   mode = DEFAULT_MODE[state.settings.content] || 'match';
+  // Prune wordbook entries that have graduated into the SRS, then make sure
+  // their levels' decks are loaded so rebuildPool can find the rest.
+  state.wordbook = (state.wordbook || []).filter(w => !(state.cards[w.id]?.reps > 0));
+  const wbLevels = [...new Set(state.wordbook.map(w => w.lv))].filter(lv => ['n5', 'n4', 'n3', 'n2', 'n1'].includes(lv));
+  if (wbLevels.length) await loadLevels('vocab', wbLevels);
   if (state.settings.content !== 'reading') {
     await loadLevels(activeDeck(), state.settings.levels);
     rebuildPool();

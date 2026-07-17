@@ -944,6 +944,85 @@ button {
 .strokes-progress { font-size: 13px; color: var(--ink-dim); margin-bottom: 4px; }
 .strokes-progress b { font-family: var(--font-mono); color: var(--shu); }
 
+/* ---------------------------------------------------------- smart reader */
+
+.rd-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.rd-title { margin: 0 0 8px; font-size: 17px; }
+.rd-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.8;
+  resize: vertical;
+}
+.rd-input:focus { outline: none; box-shadow: var(--ring); }
+.rd-demo { padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.rd-known { background: var(--kin-glow); }
+.rd-new { background: var(--shu-glow); }
+.rd-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-bottom: 14px;
+}
+.rd-stats b { color: var(--shu); font-family: var(--font-mono); }
+.rd-legend { display: flex; gap: 6px; margin-left: auto; }
+.rd-article {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  font-size: 17px;
+  line-height: 2.2;
+  text-align: left;
+  margin-bottom: 90px;
+}
+.rd-tok {
+  font: inherit;
+  padding: 0 2px;
+  border-radius: 4px;
+  line-height: inherit;
+}
+.rd-tok.rd-known:hover, .rd-tok.rd-new:hover { outline: 2px solid var(--shu); }
+.rd-pop {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(440px, 92vw);
+  background: var(--modal-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 14px 16px;
+  z-index: 70;
+  text-align: left;
+  animation: popIn .25s cubic-bezier(.2, 1.4, .4, 1);
+}
+.rd-pop[hidden] { display: none; }
+.rd-pop-head { display: flex; align-items: baseline; gap: 10px; }
+.rd-pop-word { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.rd-pop-kana { color: var(--ink-dim); }
+.rd-pop-lv { font-family: var(--font-mono); font-size: 11px; color: var(--shu); }
+.rd-pop-close { margin-left: auto; color: var(--ink-dim); }
+.rd-pop-zh { margin: 6px 0 10px; font-size: 14px; }
+.rd-pop-zh em { font-style: normal; color: var(--ink-dim); font-size: 12px; }
+.rd-pop-note { font-size: 13px; color: var(--ink-dim); }
+.rd-pop-actions .btn-primary { padding: 8px 16px; font-size: 14px; }
+
 /* ---------------------------------------------------------- pitch accent */
 
 .pitch { display: inline-flex; align-items: baseline; }
