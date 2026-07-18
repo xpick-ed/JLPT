@@ -137,20 +137,17 @@ button {
 
 /* ---------------------------------------------------------- chrome */
 
-#chrome {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  background: var(--chrome-bg);
-  border-bottom: 1px solid var(--border);
-}
+/* Only the top nav row (brand/content-switch/mode-tabs/actions) stays pinned
+   while scrolling — level/category filters and today's stats now scroll away
+   normally. Earlier both lived in one `position: sticky` #chrome, which grew
+   past 500px tall as filters/search/stats accreted, permanently eating most
+   of a phone screen no matter how far you scrolled. */
+#chrome { position: relative; }
 
 .chrome-inner {
   max-width: 960px;
   margin: 0 auto;
-  padding: 11px 18px 13px;
+  padding: 0 18px 13px;
 }
 
 .chrome-row {
@@ -159,7 +156,21 @@ button {
   gap: 10px;
 }
 
-.chrome-top { justify-content: space-between; }
+.chrome-top {
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--chrome-bg);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--border);
+  /* full-bleed edge-to-edge while chrome-inner keeps the centered column */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 11px calc(50vw - 50% + 18px);
+  box-sizing: border-box;
+}
 
 .chrome-actions { display: flex; align-items: center; gap: 8px; }
 
