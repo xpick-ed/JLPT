@@ -44,6 +44,9 @@ const MODES_BY_CONTENT = {
 let currentMode = 'match';
 let settingsOpen = false;
 let trophyOpen = false;
+let catFilter = '';
+let catsExpanded = false;
+const CAT_COLLAPSE_THRESHOLD = 10;   // rows beyond this many chips get search + collapse
 
 /** Programmatic mode switch (e.g. dictionary → practice) keeps the tabs in sync. */
 export function setCurrentMode(m) { currentMode = m; }
@@ -349,10 +352,21 @@ export function renderChrome(root, state, getData, handlers) {
           <div class="chip-row levels" role="group" aria-label="級別">
             ${LEVELS.map(lv => `<button type="button" class="chip level-chip${s.levels.includes(lv) ? ' active' : ''}" data-lv="${lv}">${lv.toUpperCase()}</button>`).join('')}
           </div>
-          <div class="chip-row categories" role="group" aria-label="分類">
-            <button type="button" class="chip cat-chip${s.categories.length === 0 ? ' active' : ''}" data-cat="">全部</button>
-            ${cats.map(c => `<button type="button" class="chip cat-chip${s.categories.includes(c) ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('')}
+          ${cats.length > CAT_COLLAPSE_THRESHOLD ? `<input type="search" class="cat-search" placeholder="搜尋分類…（共 ${cats.length} 個）" value="${esc(catFilter)}" aria-label="搜尋分類">` : ''}
+          ${(() => {
+            const filtered = catFilter ? cats.filter(c => c.toLowerCase().includes(catFilter.toLowerCase())) : cats;
+            const collapsible = !catFilter && cats.length > CAT_COLLAPSE_THRESHOLD;
+            const shown = collapsible && !catsExpanded ? filtered.slice(0, CAT_COLLAPSE_THRESHOLD) : filtered;
+            const hiddenCount = filtered.length - shown.length;
+            return `
+          <div class="chip-row categories${collapsible ? ' categories-wrap' : ''}" role="group" aria-label="分類">
+            ${catFilter ? '' : `<button type="button" class="chip cat-chip${s.categories.length === 0 ? ' active' : ''}" data-cat="">全部</button>`}
+            ${shown.map(c => `<button type="button" class="chip cat-chip${s.categories.includes(c) ? ' active' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}
           </div>
+          ${collapsible && hiddenCount > 0 ? `<button type="button" class="cat-toggle">顯示全部（還有 ${hiddenCount} 個）▾</button>`
+            : collapsible && catsExpanded ? '<button type="button" class="cat-toggle">收起 ▴</button>' : ''}
+          ${catFilter && filtered.length === 0 ? '<p class="cat-empty">沒有符合的分類</p>' : ''}`;
+          })()}
         </div>`}
         ${reading ? '' : `<div class="chrome-row today-progress">
           <div class="today-progress-main">
@@ -555,6 +569,22 @@ export function renderChrome(root, state, getData, handlers) {
       else categories = s.categories.includes(cat) ? s.categories.filter(x => x !== cat) : [...s.categories, cat];
       afterAsync(handlers.onCategoriesChange(categories));
     }));
+
+    // Live filter: re-render on every keystroke, but re-render replaces the
+    // input node — restore focus + cursor so typing doesn't get interrupted.
+    const catSearch = root.querySelector('.cat-search');
+    if (catSearch) catSearch.addEventListener('input', () => {
+      catFilter = catSearch.value;
+      const pos = catSearch.selectionStart;
+      render();
+      const fresh = root.querySelector('.cat-search');
+      if (fresh) { fresh.focus(); fresh.setSelectionRange(pos, pos); }
+    });
+    const catToggle = root.querySelector('.cat-toggle');
+    if (catToggle) catToggle.addEventListener('click', () => {
+      catsExpanded = !catsExpanded;
+      render();
+    });
 
     const npd = root.querySelector('#set-newperday');
     if (npd) npd.addEventListener('change', () => {
