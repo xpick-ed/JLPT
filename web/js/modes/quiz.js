@@ -58,9 +58,11 @@ export function mountQuiz(root, card, pool, onResult, audio, pairMode = 'meaning
         ${reading ? '' : `<span class="kana">${pitchHtml(card.kana, card.acc)}</span>`}
       </div>
       <div class="options"></div>
+      <button type="button" class="cloze-next quiz-next" hidden>下一題 →</button>
     </div>`;
   const box = root.querySelector('.options');
   const card_ = root.querySelector('.card-wrap');
+  const nextBtn = root.querySelector('.quiz-next');
 
   for (const opt of options) {
     const b = document.createElement('button');
@@ -83,7 +85,15 @@ export function mountQuiz(root, card, pool, onResult, audio, pairMode = 'meaning
       }
       stamp(b, opt.correct);
       [...box.children].forEach(c => (c.disabled = true));
-      setTimeout(() => onResult(card.id, grade), 650);
+      // A correct answer keeps the pace snappy; a wrong one waits for the
+      // learner to actually read the revealed answer before moving on.
+      if (opt.correct) {
+        setTimeout(() => onResult(card.id, grade), 650);
+      } else {
+        nextBtn.hidden = false;
+        nextBtn.focus();
+        nextBtn.onclick = () => onResult(card.id, grade);
+      }
     };
     box.appendChild(b);
   }

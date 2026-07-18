@@ -55,11 +55,13 @@ export function mountTyping(root, card, onResult, audio, pb = null, onNewBest = 
       <div class="type-actions">
         <button type="button" class="btn-ghost reveal-btn">顯示答案</button>
       </div>
+      <button type="button" class="cloze-next type-next" hidden>下一題 →</button>
     </div>`;
 
   const input = root.querySelector('.type-input');
   const feedback = root.querySelector('.type-feedback');
   const card_ = root.querySelector('.card-wrap');
+  const nextBtn = root.querySelector('.type-next');
   input.focus();
 
   function finish(grade, correct) {
@@ -68,7 +70,15 @@ export function mountTyping(root, card, onResult, audio, pb = null, onNewBest = 
     input.disabled = true;
     root.querySelector('.reveal-btn').disabled = true;
     stamp(card_, correct);
-    setTimeout(() => onResult(card.id, grade), correct ? 380 : 550);
+    // A correct answer keeps the pace snappy; revealing the answer (i.e. the
+    // learner didn't know it) waits for them to actually read it and click on.
+    if (correct) {
+      setTimeout(() => onResult(card.id, grade), 380);
+    } else {
+      nextBtn.hidden = false;
+      nextBtn.focus();
+      nextBtn.onclick = () => onResult(card.id, grade);
+    }
   }
 
   input.addEventListener('keydown', (e) => {
