@@ -22,9 +22,14 @@ export function strokeMatches(exp, pts, tol = 18) {
 }
 
 const cache = {};   // level -> {kanji: [d, ...]}
-async function loadStrokeMaps(levels) {
+// build_strokes.py emits each kanji ONCE, at the lowest level that uses it, so
+// the per-level files are a partition rather than self-contained sets: an N1
+// word written with everyday kanji has its strokes in strokes_n5.json. Always
+// load the full union — anything less silently drops most words from tracing.
+const STROKE_LEVELS = ['n5', 'n4', 'n3', 'n2', 'n1'];
+async function loadStrokeMaps() {
   const map = {};
-  for (const lv of levels) {
+  for (const lv of STROKE_LEVELS) {
     if (!cache[lv]) {
       try { cache[lv] = await (await fetch(`data/strokes_${lv}.json`)).json(); }
       catch { cache[lv] = {}; }
@@ -44,10 +49,10 @@ function shuffle(a) {
   return x;
 }
 
-export function mountStrokes(root, pool, levels, audio) {
+export function mountStrokes(root, pool, audio) {
   root.innerHTML = '<div class="done"><div class="done-emoji">✍️</div><p class="done-msg">載入筆順資料…</p></div>';
   let dead = false;
-  loadStrokeMaps(levels).then(map => {
+  loadStrokeMaps().then(map => {
     if (dead || !root.isConnected) return;
     const cards = shuffle(pool.filter(c => kanjiOf(c.word).some(ch => map[ch])));
     if (!cards.length) {

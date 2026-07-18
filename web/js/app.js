@@ -219,7 +219,7 @@ function next() {
       : mountGrammarCloze(stage, item, pool, onResult, gameAudio);
   }
   if (mode === 'shadow') return mountShadow(stage, pool);   // free listening practice, no queue/SRS
-  if (mode === 'strokes') return mountStrokes(stage, pool, state.settings.levels, gameAudio);   // free tracing, no SRS
+  if (mode === 'strokes') return mountStrokes(stage, pool, gameAudio);   // free tracing, no SRS
   if (mode === 'falling') return startFalling();
   if (mode === 'match') {
     const six = queue.splice(0, 6).map(byId).filter(Boolean);
