@@ -51,5 +51,7 @@ test('deck acc values are within mora range or clampable', async () => {
       assert.ok(Number.isInteger(c.acc) && c.acc >= 0, `${c.word}: ${c.acc}`);
     }
   }
-  assert.ok(withAcc / total >= 0.75, `${withAcc}/${total}`);
+  // kanjium prioritizes common words; the 2026-07 vocab expansion deliberately
+  // targeted rarer N1–N3 long-tail terms, which lowers overall hit rate.
+  assert.ok(withAcc / total >= 0.6, `${withAcc}/${total}`);
 });
