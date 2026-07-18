@@ -3,7 +3,7 @@
 ## Current  (overwrite this section at every handoff)
 
 - 2026-07-18 修「手機跟電腦裝置進度不sync」bug（sw v41，168/168 測試）: 根因是同步只在 boot()/登入當下跑一次 pull，之後就再也不會重抓——PWA 加到主畫面（使用者實際用法）或電腦分頁只要沒重整，切回去就停在切換前的舊資料，看起來像沒同步。另外原本唯一的離開時保護只聽 window 的 pagehide，但 iOS 把 standalone PWA 切到背景時不保證會發這個事件（WebKit 可能直接凍結 JS，讓 3 秒防抖的 push timer 沒機會跑）。修法：改聽 document 的 visibilitychange（兩種情況都會確實觸發）——切到背景立刻 flush 待送的 push；切回前景重新 syncNow()（pull+merge+push）並刷新頁首。不動 pool/queue/next()，畫面上正在答的題目不受影響。用 Playwright + monkey-patch fetch 對正式 Worker 驗證：debug 過程中發現我自己第一版寫成 `addEventListener`（掛在 window）而非 `document.addEventListener`，導致 visibilitychange 完全不會觸發——已修正並重新驗證兩個方向都正確各發一次 GET/PUT。
-  - 仍未做的是 App#35：正式站上兩台「真」裝置、真 Google 帳號的端對端 smoke test（本次只能用假 session token 驗證程式碼路徑本身，無法驗證真實 OAuth+KV 全鏈路）。
+  - App#35 已完成：使用者在正式站上實測兩台真裝置＋真 Google 帳號登入同步，通過。
 - Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md。五級單字書＋五級文法句型書＋聽力菜單＋N1 計畫皆完成
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。素材齊全，靠每天執行（聽力見 LISTENING_PLAN.md）；讀解技巧＋考古題於 Phase 3-4
 - 2026-07-18 單字/文法覆蓋補到 100%＋全資料對抗式總審（PWA v33，167/167 測試全過）:
@@ -67,9 +67,9 @@
   - 三大支柱全到位: 單字（4 模式）、文法（四選一 623／排列重組 506）、閱讀（每日連結）。
   - 更新模式決定: 閱讀採 approach ①（連現成每日日語新聞），不做即時生成/後端/AI 生文（版權與成本考量）。
   - Google 登入 + 每人同步 已上線（取代 passphrase）: GIS 登入→Worker /session 用 tokeninfo 驗 ID token→發 60 天 session→同步帶 Bearer，資料存 user:<sub>。worker/index.js（validateClaims + /session//data//logout，CORS 鎖 ALLOWED_ORIGIN）+ web/js/auth.js（session/owner 存取 + GIS glue）+ sync.js Bearer + app.js（onCredential/signOut/syncNow）+ ui 設定帳號區。本地優先不變、登入為選配。opus 終審＋2 輪加固：帳號感知同步（applySync，換帳號不混、有純函式回歸測試防漏）、signOut 打 /logout、name/email escape。59/59 測試、Playwright 驗過、0 error。spec/plan 於 docs/superpowers/2026-07-13-*。
-    - Google Client ID、Worker URL、KV 與 allowed origin 已填入 repo；仍應依 docs/deploy/google-login-setup.md 在正式站做一次雙裝置登入 smoke test。
+    - Google Client ID、Worker URL、KV 與 allowed origin 已填入 repo；正式站雙裝置登入 smoke test 已於 2026-07-18 由使用者實測通過。
   - PWA（可安裝 + 離線）已上線: web/manifest.json（standalone、相對路徑）+ build_icons.py 生朱紅「字」印章 icon（192/512/maskable/apple-touch，commit 進 web/icons）+ web/sw.js（precache app shell + 同源 GET stale-while-revalidate；跨源 Worker 同步/GIS/字型一律走網路不快取）+ index.html manifest/apple-touch/iOS metas + app.js 註冊 SW。手機可「加到主畫面」全螢幕、離線可玩。61/61 測試、Playwright 驗過離線重載仍渲染、0 error（一次 GIS 第三方腳本 transient 錯誤、clean rerun 無、不影響功能）。spec/plan 於 docs/superpowers/2026-07-14-*。改版記得 bump web/sw.js 的 CACHE。
-  - 部署狀態（2026-07-17 查證）: 正式站 **已上線** https://xpick-ed.github.io/JLPT/web/ ，走 Pages「deploy from branch」（main 直出，push 即部署，不需要 docs/deploy/pages.yml 的 workflow）；Worker CORS 已正確允許該 origin。唯一未人工驗證的是正式站上實際點 Google 登入＋雙裝置同步（Google Cloud Console 的授權 origin 是否含 xpick-ed.github.io 只能實測確認）。
+  - 部署狀態（2026-07-18 查證）: 正式站 **已上線** https://xpick-ed.github.io/JLPT/web/ ，走 Pages「deploy from branch」（main 直出，push 即部署，不需要 docs/deploy/pages.yml 的 workflow）；Worker CORS 已正確允許該 origin。Google 登入＋雙裝置同步已於正式站實機驗證通過（含 2026-07-18 的 visibilitychange 前景/背景重新同步修法）。
 - 素材: build_vocab_pdf.py / build_grammar_pdf.py（level 參數 n5-n1）、data/(grammar_)<lv>_part*.json、<LV>單字書/文法句型書.pdf、JLPT_N5-N1_*.csv（單字普通+Anki、文法 Anki）
 - Blocked / to decide: 每日可投入時數尚未確認（計畫以 4–5h/日為前提）
 - Relevant files: STUDY_PLAN.md, N5/N4/N3單字書.pdf, build_vocab_pdf.py, data/n[345]_part*.json
