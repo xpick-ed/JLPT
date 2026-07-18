@@ -427,12 +427,20 @@ button {
 
 /* ---------------------------------------------------------- settings panel */
 
+/* Settings/trophy content has grown a lot (exam date, backup, quests, stats,
+   badge wall…) — `display:grid; place-items:center` on a fixed full-viewport
+   box CENTERS the modal but clips anything taller than the screen with no way
+   to reach it, since the overlay itself never scrolls. Auto-margin flexbox
+   centering fixes this: it centers when the modal fits, and degrades to a
+   normal top-anchored, scrollable layout when it doesn't. */
 .settings-panel {
   position: fixed;
   inset: 0;
   z-index: 60;
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 16px;
   background: rgba(6, 8, 14, 0.55);
   backdrop-filter: blur(4px);
   animation: fadeIn .18s ease;
@@ -441,6 +449,7 @@ button {
 
 .settings-inner {
   width: min(430px, 92vw);
+  margin: auto 0;
   background: var(--modal-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
