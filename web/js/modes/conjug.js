@@ -29,11 +29,13 @@ export function mountConjug(root, card, onResult, audio) {
       <div class="type-actions">
         <button type="button" class="btn-ghost reveal-btn">顯示答案</button>
       </div>
+      <button type="button" class="cloze-next conjug-next" hidden>下一題 →</button>
     </div>`;
 
   const input = root.querySelector('.type-input');
   const feedback = root.querySelector('.type-feedback');
   const card_ = root.querySelector('.card-wrap');
+  const nextBtn = root.querySelector('.conjug-next');
   input.focus();
 
   function finish(grade, correct) {
@@ -42,7 +44,15 @@ export function mountConjug(root, card, onResult, audio) {
     input.disabled = true;
     root.querySelector('.reveal-btn').disabled = true;
     stamp(card_, correct);
-    setTimeout(() => onResult(card.id, grade), correct ? 500 : 900);
+    // A correct answer keeps the pace snappy; revealing the answer waits for
+    // the learner to actually read it and click on.
+    if (correct) {
+      setTimeout(() => onResult(card.id, grade), 500);
+    } else {
+      nextBtn.hidden = false;
+      nextBtn.focus();
+      nextBtn.onclick = () => onResult(card.id, grade);
+    }
   }
 
   input.addEventListener('keydown', (e) => {

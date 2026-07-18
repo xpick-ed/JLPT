@@ -54,10 +54,12 @@ export function mountParticle(root, card, onResult, audio) {
       <div class="cloze-sentence">${furiganaToRuby(cloze.before)}<span class="cloze-blank particle-blank" aria-label="填助詞"></span>${furiganaToRuby(cloze.after)}</div>
       <div class="excloze-zh">${card.ex_zh || ''}</div>
       <div class="options options-row"></div>
+      <button type="button" class="cloze-next particle-next" hidden>下一題 →</button>
     </div>`;
   const box = root.querySelector('.options');
   const card_ = root.querySelector('.card-wrap');
   const blank = root.querySelector('.cloze-blank');
+  const nextBtn = root.querySelector('.particle-next');
 
   for (const opt of options) {
     const b = document.createElement('button');
@@ -82,7 +84,13 @@ export function mountParticle(root, card, onResult, audio) {
       blank.classList.add('filled');
       stamp(b, opt.correct);
       [...box.children].forEach(c => (c.disabled = true));
-      setTimeout(() => onResult(card.id, grade), 1000);
+      if (opt.correct) {
+        setTimeout(() => onResult(card.id, grade), 1000);
+      } else {
+        nextBtn.hidden = false;
+        nextBtn.focus();
+        nextBtn.onclick = () => onResult(card.id, grade);
+      }
     };
     box.appendChild(b);
   }

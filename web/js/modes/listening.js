@@ -65,11 +65,13 @@ export function mountListening(root, card, pool, onResult, audio, pairMode = 'me
       </div>
       <div class="listen-reveal" hidden></div>
       <div class="options"></div>
+      <button type="button" class="cloze-next listen-next" hidden>下一題 →</button>
     </div>`;
   const box = root.querySelector('.options');
   const card_ = root.querySelector('.card-wrap');
   const reveal = root.querySelector('.listen-reveal');
   const play = root.querySelector('.listen-play');
+  const nextBtn = root.querySelector('.listen-next');
 
   const sayIt = () => speak(card.kana);
   play.addEventListener('click', sayIt);
@@ -98,7 +100,14 @@ export function mountListening(root, card, pool, onResult, audio, pairMode = 'me
       [...box.children].forEach(c => (c.disabled = true));
       reveal.hidden = false;
       reveal.innerHTML = `${card.word}（${pitchHtml(card.kana, card.acc)}）— ${card.zh}`;
-      setTimeout(() => { if (ttsAvailable()) speechSynthesis.cancel(); onResult(card.id, grade); }, 1300);
+      if (opt.correct) {
+        setTimeout(() => { if (ttsAvailable()) speechSynthesis.cancel(); onResult(card.id, grade); }, 1300);
+      } else {
+        if (ttsAvailable()) speechSynthesis.cancel();   // stop the readout while they read the reveal
+        nextBtn.hidden = false;
+        nextBtn.focus();
+        nextBtn.onclick = () => onResult(card.id, grade);
+      }
     };
     box.appendChild(b);
   }

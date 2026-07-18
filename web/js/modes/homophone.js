@@ -41,9 +41,11 @@ export function mountHomophone(root, card, pool, allWords, onResult, audio) {
       </div>
       <div class="zh-hint">${card.zh}</div>
       <div class="options"></div>
+      <button type="button" class="cloze-next homophone-next" hidden>下一題 →</button>
     </div>`;
   const box = root.querySelector('.options');
   const card_ = root.querySelector('.card-wrap');
+  const nextBtn = root.querySelector('.homophone-next');
 
   for (const opt of options) {
     const b = document.createElement('button');
@@ -71,7 +73,13 @@ export function mountHomophone(root, card, pool, allWords, onResult, audio) {
         c.disabled = true;
       }
       stamp(b, opt.correct);
-      setTimeout(() => onResult(card.id, grade), 1500);
+      if (opt.correct) {
+        setTimeout(() => onResult(card.id, grade), 1500);
+      } else {
+        nextBtn.hidden = false;
+        nextBtn.focus();
+        nextBtn.onclick = () => onResult(card.id, grade);
+      }
     };
     box.appendChild(b);
   }

@@ -47,11 +47,13 @@ export function mountVocabCloze(root, card, pool, onResult, audio) {
       <div class="excloze-zh">${card.ex_zh || ''}</div>
       <div class="listen-reveal" hidden></div>
       <div class="options"></div>
+      <button type="button" class="cloze-next excloze-next" hidden>下一題 →</button>
     </div>`;
   const box = root.querySelector('.options');
   const card_ = root.querySelector('.card-wrap');
   const blank = root.querySelector('.cloze-blank');
   const reveal = root.querySelector('.listen-reveal');
+  const nextBtn = root.querySelector('.excloze-next');
 
   for (const opt of options) {
     const b = document.createElement('button');
@@ -78,7 +80,13 @@ export function mountVocabCloze(root, card, pool, onResult, audio) {
       reveal.innerHTML = `${card.word}（${pitchHtml(card.kana, card.acc)}）— ${card.zh}`;
       stamp(b, opt.correct);
       [...box.children].forEach(c => (c.disabled = true));
-      setTimeout(() => onResult(card.id, grade), 1200);
+      if (opt.correct) {
+        setTimeout(() => onResult(card.id, grade), 1200);
+      } else {
+        nextBtn.hidden = false;
+        nextBtn.focus();
+        nextBtn.onclick = () => onResult(card.id, grade);
+      }
     };
     box.appendChild(b);
   }
