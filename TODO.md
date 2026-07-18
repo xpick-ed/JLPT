@@ -2,6 +2,8 @@
 
 ## Current  (overwrite this section at every handoff)
 
+- 2026-07-18 修「手機跟電腦裝置進度不sync」bug（sw v41，168/168 測試）: 根因是同步只在 boot()/登入當下跑一次 pull，之後就再也不會重抓——PWA 加到主畫面（使用者實際用法）或電腦分頁只要沒重整，切回去就停在切換前的舊資料，看起來像沒同步。另外原本唯一的離開時保護只聽 window 的 pagehide，但 iOS 把 standalone PWA 切到背景時不保證會發這個事件（WebKit 可能直接凍結 JS，讓 3 秒防抖的 push timer 沒機會跑）。修法：改聽 document 的 visibilitychange（兩種情況都會確實觸發）——切到背景立刻 flush 待送的 push；切回前景重新 syncNow()（pull+merge+push）並刷新頁首。不動 pool/queue/next()，畫面上正在答的題目不受影響。用 Playwright + monkey-patch fetch 對正式 Worker 驗證：debug 過程中發現我自己第一版寫成 `addEventListener`（掛在 window）而非 `document.addEventListener`，導致 visibilitychange 完全不會觸發——已修正並重新驗證兩個方向都正確各發一次 GET/PUT。
+  - 仍未做的是 App#35：正式站上兩台「真」裝置、真 Google 帳號的端對端 smoke test（本次只能用假 session token 驗證程式碼路徑本身，無法驗證真實 OAuth+KV 全鏈路）。
 - Doing: Phase 1（N4+N3 文法速通，至 8/30）— 見 STUDY_PLAN.md。五級單字書＋五級文法句型書＋聽力菜單＋N1 計畫皆完成
 - Next: 8 月底做 N3 模擬題 → 決定報 N2 或 N3；9 月初完成 LTTC 報名。素材齊全，靠每天執行（聽力見 LISTENING_PLAN.md）；讀解技巧＋考古題於 Phase 3-4
 - 2026-07-18 單字/文法覆蓋補到 100%＋全資料對抗式總審（PWA v33，167/167 測試全過）:
