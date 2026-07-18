@@ -568,6 +568,26 @@ addEventListener('pagehide', () => {
   }
 });
 
+// Sync so far only ran at boot/login — fine for a fresh page load, but a
+// home-screen PWA (or a browser tab left open) never reloads between visits,
+// so two devices could sit on stale copies of each other indefinitely.
+// visibilitychange also covers what pagehide misses on iOS: backgrounding a
+// standalone PWA doesn't reliably fire pagehide (WebKit may just freeze the
+// JS context, silently dropping an in-flight 3s debounce), but visibilitychange
+// fires every time. Hidden → flush any pending push right away; visible again
+// → pull whatever the other device wrote while this one was backgrounded.
+let syncing = false;
+document.addEventListener('visibilitychange', () => {
+  const sess = getSession();
+  if (!WORKER_URL || !sess) return;
+  if (document.hidden) {
+    if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; push(WORKER_URL, sess.session, state); }
+  } else if (!syncing) {
+    syncing = true;
+    syncNow().then(renderAll).finally(() => { syncing = false; });
+  }
+});
+
 // First-run setup: pick a level, exam date, and daily goal in one screen.
 function renderOnboarding(stage) {
   const LV = ['n5', 'n4', 'n3', 'n2', 'n1'];
