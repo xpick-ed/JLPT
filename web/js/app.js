@@ -58,6 +58,17 @@ const activeData = () => data[activeDeck()];
 const DECK_PREFIX = { vocab: '', grammar: 'grammar_', grammar_order: 'grammar_order_' };
 let pool = [];             // filtered candidate cards
 let queue = [];            // ids to review this session
+// 同音辨析 needs same-reading twins from the WHOLE vocabulary, not just the
+// selected levels — most homophone pairs cross level boundaries (e.g. an N1
+// word and its more common N3 homophone). Loaded once in the background;
+// falls back to the level-scoped pool until ready.
+let allVocabFlat = null;
+function ensureAllVocab() {
+  if (allVocabFlat) return;
+  loadLevels('vocab', ['n5', 'n4', 'n3', 'n2', 'n1']).then(() => {
+    allVocabFlat = ['n5', 'n4', 'n3', 'n2', 'n1'].flatMap(lv => data.vocab[lv] || []);
+  });
+}
 let stopFalling = null;
 let practiceKind = null;
 let lastActivityAt = Date.now();
@@ -257,7 +268,7 @@ function next() {
       // (reworded examples, no particle after a noun) get the plain quiz instead.
       : mode === 'excloze' && makeCloze(card) ? mountVocabCloze(stage, card, pool, onResult, gameAudio)
       : mode === 'particle' && makeParticleCloze(card) ? mountParticle(stage, card, onResult, gameAudio)
-      : mode === 'homophone' && homophonesOf(card, pool).length ? mountHomophone(stage, card, pool, onResult, gameAudio)
+      : mode === 'homophone' && homophonesOf(card, allVocabFlat || pool).length ? mountHomophone(stage, card, pool, allVocabFlat || pool, onResult, gameAudio)
       : mode === 'dictation' && chunkSentence(card.ex) ? mountDictation(stage, card, onResult, gameAudio)
       : mode === 'conjug' && isConjugatable(card) ? mountConjug(stage, card, onResult, gameAudio)
       : mountQuiz(stage, card, pool, onResult, gameAudio, state.settings.pairMode);
@@ -622,6 +633,7 @@ function renderOnboarding(stage) {
   } else {
     next();
   }
+  ensureAllVocab();   // background: powers cross-level 同音辨析 matching once ready
   // Autoplay is blocked until a user gesture, so if a BGM style was left on,
   // start it on the first interaction. (Changing it in settings is a gesture.)
   if (normalizeStyle(state.settings.bgm) !== 'off') {

@@ -28,5 +28,23 @@ test('real decks contain a healthy number of homophone questions', async () => {
     all.push(...JSON.parse(fs.readFileSync(new URL(`../web/data/${lv}.json`, import.meta.url))));
   }
   const withTwins = all.filter(c => homophonesOf(c, all).length > 0);
-  assert.ok(withTwins.length >= 300, String(withTwins.length));
+  assert.ok(withTwins.length >= 800, String(withTwins.length));   // ~9% cross-level
+});
+
+test('cross-level lookup finds twins an N1-only search would miss', async () => {
+  // Most homophone pairs span level boundaries (a rarer N1 word sharing a
+  // reading with a more common N3/N2 word), so scoping the search to N1
+  // alone drastically undercounts real pairs — this is why the app searches
+  // the full cross-level vocabulary rather than just the selected levels.
+  const fs = await import('node:fs');
+  const byLevel = {};
+  const all = [];
+  for (const lv of ['n5', 'n4', 'n3', 'n2', 'n1']) {
+    byLevel[lv] = JSON.parse(fs.readFileSync(new URL(`../web/data/${lv}.json`, import.meta.url)));
+    all.push(...byLevel[lv]);
+  }
+  const n1Only = byLevel.n1.filter(c => homophonesOf(c, byLevel.n1).length > 0).length;
+  const n1CrossLevel = byLevel.n1.filter(c => homophonesOf(c, all).length > 0).length;
+  assert.ok(n1CrossLevel > n1Only, `cross-level ${n1CrossLevel} should exceed N1-only ${n1Only}`);
+  assert.ok(n1CrossLevel / byLevel.n1.length >= 0.07, `${n1CrossLevel}/${byLevel.n1.length}`);
 });

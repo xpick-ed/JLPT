@@ -12,11 +12,16 @@ export function homophonesOf(card, pool) {
   return pool.filter(c => c.kana === card.kana && c.word !== card.word && c.word !== c.kana);
 }
 
-/** Mount one homophone question. Caller ensures homophonesOf() is non-empty. */
-export function mountHomophone(root, card, pool, onResult, audio) {
+/**
+ * Mount one homophone question. `pool` sources padding distractors (kept to
+ * the current study scope); `allWords` — ideally the whole cross-level
+ * vocabulary — sources the real homophone twins, since most pairs span level
+ * boundaries. Caller ensures homophonesOf(card, allWords) is non-empty.
+ */
+export function mountHomophone(root, card, pool, allWords, onResult, audio) {
   const start = performance.now();
-  const twins = homophonesOf(card, pool);
-  const zhByWord = new Map(pool.map(c => [c.word, c.zh]));
+  const twins = homophonesOf(card, allWords);
+  const zhByWord = new Map([...pool, ...twins, card].map(c => [c.word, c.zh]));
   const answer = card.word;
   const optionWords = [answer, ...twins.map(c => c.word)].slice(0, 4);
   if (optionWords.length < 4) {
