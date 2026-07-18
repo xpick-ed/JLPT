@@ -29,7 +29,7 @@
 - 純 HTML/CSS/ES modules，**零 npm 依賴**；PWA 可安裝、全部題庫預快取、完全離線可用
 - 聽力/跟讀用瀏覽器內建語音合成（無音檔）；音效與 BGM 皆 Web Audio 即時合成（無資產）
 - 聲調標記來自 [kanjium](https://github.com/mifunetoshiro/kanjium)（CC BY-SA）；筆順來自 [KanjiVG](https://kanjivg.tagaini.net)（CC BY-SA 3.0）
-- 進度存 localStorage，可選 Google 登入經 Cloudflare Worker + KV 跨裝置同步（本地優先）；設定內建 JSON 備份匯出/匯入
+- 進度存 localStorage，可選 Google 登入經 Cloudflare Worker + KV 跨裝置同步（本地優先）；切到背景/其他分頁即送出、切回前景即重新拉取合併，不必手動重整；設定內建 JSON 備份匯出/匯入
 
 ## 開發
 
