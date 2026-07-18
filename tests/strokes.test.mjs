@@ -41,5 +41,5 @@ test('stroke data files exist, parse, and hold plausible SVG paths', async () =>
     }
     total += Object.keys(map).length;
   }
-  assert.equal(total, 1940);
+  assert.equal(total, 2217);
 });
